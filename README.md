@@ -25,7 +25,11 @@ Metal ions are HETATM records (`ZN`, `MG`, `FE`, …). Every one of these filter
 
 ## Status
 
-**Step 0** — blast radius and kill checks. Nothing downstream starts until it passes.
+**Paused 2026-08-16. Read `docs/HANDOFF.md` to resume.**
+
+Step 0 complete, all gates passed. Step 1 pre-registered and committed. The external zinc
+benchmark is built but has verified defects and must not be used as-is; the fix is written up
+and ready to hand off. No molecules have been generated.
 
 ## Layout
 
