@@ -103,22 +103,48 @@ Binary per molecule.
 
 ## 5. Controls
 
-**C1 — native ligands.** The ceiling, and the G2 validation. Native ligands of metalloenzymes
-frequently coordinate the metal directly, so this also calibrates what "good" looks like.
+**C1 — native ligands (unpaired reference).** In the same external Zn pockets, apply the
+checker to the native ligand coordinates. This is the **ceiling**: native ligands frequently
+coordinate the metal directly. It also validates G2 — if the median native-ligand
+metal-donor distance falls outside 1.9–2.3 Å, the frame mapping is wrong.
 
-**C2 — protein-atom clash rate, same molecules.** Clash rate against ordinary protein heavy
-atoms in the same pockets. Establishes the model's baseline geometric sloppiness.
+**C2 — protein-atom clash rate (paired within molecule).** For each generated molecule,
+measure the clash rate against **ordinary protein heavy atoms** in the same pocket (same
+threshold radii, same distance cutoffs). Paired: one protein-atom rate and one metal-site
+rate per molecule, aggregated per cluster. Establishes the model's baseline geometric
+sloppiness and ensures any metal-site signal is not simply "this model generates bad
+geometry everywhere."
 
-**C3 — buried pseudo-atom control.** *This is the control that could detect the positive.*
-In metal-free pockets, place a virtual point at buried positions matched to real metal sites
-on burial depth, and measure how often generated ligands occupy the equivalent volume.
+**C3 — burial-matched decoy control (within-pocket paired — PRIMARY).**
+*This is the control that decides whether the metal framing survives.*
 
-> If generated ligands occupy real metal sites at the **same** rate they occupy arbitrary
-> matched buried points, then the model is not failing at metals specifically — it is simply
-> filling buried volume, and the metal framing is wrong.
+**Primary design (within-pocket, paired):** In the SAME metalloprotein pockets, with the
+SAME generated molecules, compare occupancy of the **true metal site** against
+**burial-matched decoy points** placed within that same pocket. Protocol:
 
-C3 is mandatory. The predecessor project's governing lesson was that a buriedness baseline
-reached the 98.2nd percentile where the method under test scored 52.4 against a 52.2 floor.
+1. For each target pocket, identify the true Zn position (from the raw PDB receptor).
+2. Place K=5 decoy points per pocket at positions matched to the metal on:
+   - burial depth (solvent-accessible surface area shell)
+   - distance to pocket centroid (±0.5 Å)
+   - Reject decoys within 2.0 Å of any protein heavy atom.
+3. For each generated molecule, measure whether any heavy atom falls within 2.7 Å of the
+   metal site AND within 2.7 Å of each decoy point. Occupancy is the per-molecule
+   indicator.
+4. Paired difference per cluster: `metal_occupancy − mean(decoy_occupancy)`.
+5. Bootstrap over clusters (the paired difference is the unit).
+
+Paired by design: same molecules, same pocket, only the reference point differs. This
+eliminates between-pocket variability from the comparison.
+
+**Secondary design (cross-pocket, unpaired):** Compare metal-site occupancy on metalloprotein
+pockets against occupancy of burial-matched positions in metal-free pockets of similar depth.
+This is the original design; it remains as a sensitivity check.
+
+> If the within-pocket paired difference is not distinguishable from zero, then generated
+> molecules do not preferentially occupy the metal site over matched buried space in the same
+> pocket — the failure is not metal-specific, and the framing must change.
+
+C3 is mandatory and is decided before any claim is made about metal-specificity.
 
 ## 6. Predictions, registered in advance
 
@@ -138,12 +164,28 @@ volume, not metals, and the framing changes.
 
 ## 7. Analysis
 
-- Molecules pooled within target; **protein sequence cluster (at 30% identity, m=20 X-ray
-  clusters) treated as the unit of resampling** for the primary analysis.
-- Bootstrap over clusters, 10,000 resamples, BCa intervals, preventing pseudo-replication.
-- Paired comparisons by cluster wherever arms are compared.
+**Primary analysis:** GLMM with cluster as a random effect (logistic link; cluster intercept
+random), fit over all surviving targets within each cohort. Fixed effect of interest: arm
+(generated vs. native / metal-site vs. decoy). The GLMM respects the nested structure
+(molecules within targets within clusters) and yields the headline OR and 95% CI.
+
+**Sensitivity bounds:**
+- *Cluster-level bootstrap:* Aggregate violation rate per cluster; resample clusters
+  (10,000 BCa bootstrap). This is the most conservative estimate — treats all within-cluster
+  correlation as nuisance. Report alongside GLMM.
+- *Target-level bootstrap:* Aggregate per target; resample targets. Ignores between-cluster
+  structure (risks pseudo-replication in large enzyme families). Reported as a sensitivity
+  check; headline is GLMM.
+
+**Additional requirements:**
+- Cryo-EM targets (m=5) analysed in a separate stratified pass; never pooled with X-ray
+  primary without noting the stratum.
+- Paired comparisons (C2, C3-primary) use paired bootstrap over the within-cluster
+  difference, consistent with the within-pocket paired design.
 - Report per-cluster and per-target values, not only the pooled mean.
-- Cryo-EM clusters (m=5) analysed in a separate sensitivity pass.
+- Agreement criterion (pre-registered): if GLMM OR and cluster-level bootstrap differ by
+  more than 2× in the point estimate, the discrepancy is reported as evidence of
+  family-level confounding and the claim is demoted.
 
 ## 8. Detection limit
 
@@ -154,49 +196,86 @@ N (molecules per target) does not appear in this formula once N is large enough 
 within-cluster estimate is stable; N=100 is sufficient at all predicted violation rates.
 MDE at 80% power, two-tailed α=0.05: `(z_α/2 + z_β) × SE = 2.802 × SE`.
 
-All MDE figures use `p=0.5` (maximum-variance, most conservative assumption).
+**Amendment 1 (2026-08-17): Corrected MDE reporting.** The previous entry used
+`SE = √(p(1−p)/m)` as if σ_d equalled the theoretical maximum for a single independent
+proportion. For a paired comparison of proportions the relevant quantity is σ_d, the
+between-cluster SD of the **paired difference** (D_i = arm1_rate_i − arm2_rate_i). The
+theoretical bound σ_d=0.47 assumes the two arms are uncorrelated and both at p=0.5, which
+is the worst case, not an operating estimate. The table below shows MDE over a range of σ_d.
 
-### PRIMARY Cohort: Clean External Catalytic Zn
+### PRIMARY Cohort: Clean External Catalytic Zn (Amendment 3: resolution ≤2.8 Å)
 
-| Analysis level | m | MDE (80% power) |
-|---|---|---|
-| Cluster-level resampling — X-ray only (primary) | 20 | **31.3%** |
-| Cluster-level resampling — all methods | 25 | **28.0%** |
-| Target-level reference (ignores cluster structure) | 134 | **12.1%** |
+**Final counts:** n=138 targets, 29 sequence clusters, 27 after same-UniProt merge; **22 X-ray clusters (primary), 5 cryo-EM (stratified subgroup).**
+
+MDE formula for paired comparison across m clusters: `MDE = (z_α/2 + z_β) × σ_d / √m`, where σ_d is the between-cluster SD of the paired difference (not the theoretical maximum for an independent proportion). N (molecules per target) does not appear once N≥100.
+
+**Key:** `σ_d=0.47` is the theoretical bound (independent Bernoulli at p=0.5, uncorrelated); `σ_d=0.15–0.20` is the plausible operating range for a within-pocket paired design.
+
+#### MDE table — Amendment 1
+
+| σ_d | label | m=22 | m=27 |
+|---|---|---|---|
+| 0.15 | plausible-low (within-pocket paired) | 9.0% | 8.1% |
+| 0.20 | plausible-mid | 11.9% | 10.8% |
+| 0.30 | plausible-high (unpaired proxy) | 17.9% | 16.2% |
+| 0.47 | theoretical bound (indep. proportions) | 28.0% | 25.3% |
+
+#### Per-comparison power assessment
+
+**C1: generated molecules vs native ligands**
+- Expected δ ≈ 0.25 (registered: generated >30%, native <5%)
+- σ_d ≈ 0.20–0.30 (unpaired, different populations)
+- MDE at m=22, σ_d=0.20: **11.9%** → C1 is **well-powered** (expected δ >> MDE at all plausible σ_d)
+
+**C2: metal-site clash vs protein-atom clash (within molecule, paired)**
+- Expected δ ≈ 0.05–0.15 (metal site occupied more than typical buried protein atom)
+- σ_d ≈ 0.10–0.15 (paired within same molecule; correlation reduces variance)
+- MDE at m=22, σ_d=0.10: **5.9%** | σ_d=0.15: **9.0%** → C2 is **adequately powered** at plausible σ_d
+
+**C3: metal-site occupancy vs burial-matched decoy (within-pocket paired — PRIMARY)**
+- Expected δ ≈ 0.069 (registered 1.3× occupancy ratio; if metal occ=0.30, decoy=0.231)
+- σ_d ≈ 0.15 (within-pocket paired; optimistic lower bound)
+- MDE at m=22, σ_d=0.15: **9.0%** — exceeds expected δ of 6.9%
+- m required to detect δ=0.069 at σ_d=0.15: **≥37 clusters**
 
 > [!WARNING]
-> **Marginal power warning (pre-registered).** The registered prediction is >30% violation
-> rate. With m=20 X-ray clusters the cluster-level MDE is 31.3% — the predicted effect
-> equals the MDE. Power against the registered alternative is therefore ~50%, not 80%.
+> **C3 is underpowered for the registered 1.3× effect.** With m=22 X-ray clusters and
+> σ_d=0.15 (optimistic for paired within-pocket), MDE=9.0% > δ=6.9%. Power against the
+> registered 1.3× alternative is <50%.
 >
-> Consequence: a null result (violation rate <30%) is **not informative** at cluster level
-> with m=20. The study is adequately powered only if the true rate exceeds ~40%.
+> **Pre-registered consequence:** If C3 shows a null result (paired difference not
+> distinguishable from zero), this is **not interpretable** as absence of effect — the
+> design cannot resolve the 1.3× prediction. C3 null → "unresolved" not "absent".
+> A positive C3 result (occupancy ratio >1.3× detected) would be informative because
+> it is harder to achieve than the MDE requires.
 >
-> **Mitigation:** We report both cluster-level and target-level (n=134, MDE=12.1%)
-> estimates. The target-level estimate treats each structure independently and risks
-> pseudo-replication within enzyme families, but it can detect effects at the registered
-> prediction. We pre-register that: (a) the cluster-level estimate is the headline number;
-> (b) target-level is a sensitivity check; (c) agreement between the two is a prerequisite
-> for any strong claim.
+> **Mitigation recorded in advance:** The within-pocket paired design (K=5 decoys, same
+> molecules) reduces σ_d substantially compared to a cross-pocket design. If the empirical
+> σ_d measured from the data is ≤0.10, C3 becomes adequately powered at m=22 (MDE=5.9%).
+> We will report the empirical σ_d alongside the result.
+
+**C3 secondary (cross-pocket, unpaired):** σ_d≈0.30 expected; at m=22 MDE=17.9% — also underpowered for the 1.3× prediction. Reported as context, not evidence.
 
 ### SECONDARY Cohort: CrossDocked Catalytic Zn (m=30)
-- MDE = **25.6%** (SE=0.0913) at 80% power
+- MDE at σ_d=0.20: **10.2%** | σ_d=0.30: **15.4%** | σ_d=0.47: **24.0%**
 
 ### CONSISTENCY Cohort: Clean CrossDocked Catalytic Zn (m=3)
-- MDE = **80.9%** — directional consistency only; design cannot resolve effects at m=3.
+- MDE at σ_d=0.20: **32.4%** — directional consistency only; cannot resolve effects at m=3.
 
 ### Operating choice
 N = 100 molecules per target. Increasing N does not reduce cluster-level MDE.
 
 ## 9. What would falsify the Step 1 claim
 
-- C3 shows metal sites are occupied at the rate of matched buried points → not metal-specific.
-- C1 shows native ligands also violate at high rates → thresholds are too strict, or the
-  frame mapping is subtly wrong despite G2.
-- The primary endpoint on generated molecules is low (< 10%) → the model avoids metal sites
-  in practice despite never seeing them, and the premise is weaker than assumed.
-- Cluster-level and target-level estimates disagree by >2× → family-level confounding; the
-  claim is demoted to "warrants further investigation."
+- **C3 positive:** Metal-site occupancy = decoy occupancy (paired difference ≈ 0) AND the
+  empirical σ_d ≤ 0.10 (confirming the design had adequate power) → the excess occupancy at
+  metal sites is not metal-specific; the framing must change.
+- **C1 positive:** Native ligands violate at rates ≥10% → thresholds too strict or G2
+  frame mapping subtly wrong despite passing the gate.
+- **Primary endpoint low (<10%):** Model avoids metal sites in practice despite never seeing
+  them during training; the premise is weaker than assumed.
+- **GLMM vs cluster-bootstrap disagree >2×:** Family-level confounding; claim demoted to
+  "warrants investigation in a broader, family-balanced set."
 
 Any of these is reported as the result. None is grounds for adjusting thresholds after the
 fact.

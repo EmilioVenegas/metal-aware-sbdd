@@ -50,6 +50,11 @@ METABOLITE_BLACKLIST = {
     'GLC', 'FRU', 'GAL', 'MAN',
 }
 
+# Amendment 3 (2026-08-17): relax X-ray cutoff from 2.5 to 2.8 Å to recover
+# clusters toward m≥31 needed for C3 power (σ_d=0.15, δ=0.069 → m≥37).
+# Cryo-EM is kept as a stratified subgroup, not an exclusion.
+MAX_XRAY_RESOLUTION = 2.8   # Ångström
+
 # Minimum allowed coordination distance.
 # Values <= this threshold indicate a covalent adduct, not ion coordination.
 MIN_COORD_DIST_CUTOFF = 1.75  # Ångström
@@ -244,8 +249,8 @@ def main():
         methods = [m.get("method", "") for m in exptl]
         is_cryo = any("ELECTRON MICROSCOPY" in m.upper() for m in methods)
 
-        if not is_cryo and res > 2.5:
-            dropped.append(f"{pdb}: Resolution {res:.2f} > 2.5 (X-ray)")
+        if not is_cryo and res > MAX_XRAY_RESOLUTION:
+            dropped.append(f"{pdb}: Resolution {res:.2f} > {MAX_XRAY_RESOLUTION} (X-ray)")
             continue
 
         # ── Filter 5: Not an active-site mutant ───────────────────────────────
