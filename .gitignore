@@ -15,8 +15,11 @@ checkpoints/
 results/**/*.sdf
 results/**/*.csv
 results/**/*.json
+results/**/*.jsonl
+*.jsonl
 !results/**/README.md
 !results/**/ANALYSIS_PLAN.md
+!results/**/*.md
 
 .env
 .venv/
