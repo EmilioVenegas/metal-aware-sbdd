@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# data and model artifacts — too large for git
+data/
+checkpoints/
+*.ckpt
+*.lmdb
+*.pt
+*.pdbqt
+
+# generated outputs; keep results/*/README.md and analysis plans
+results/**/*.sdf
+results/**/*.csv
+results/**/*.json
+!results/**/README.md
+!results/**/ANALYSIS_PLAN.md
+
+.env
+.venv/
