@@ -25,11 +25,13 @@ Metal ions are HETATM records (`ZN`, `MG`, `FE`, …). Every one of these filter
 
 ## Status
 
-**Paused 2026-08-16. Read `docs/HANDOFF.md` to resume.**
+**Step 1 generation running (launched 2026-08-16 ~22:30, ETA ~08:00).
+Read `docs/RUNBOOK.md` first.**
 
-Step 0 complete, all gates passed. Step 1 pre-registered and committed. The external zinc
-benchmark is built but has verified defects and must not be used as-is; the fix is written up
-and ready to hand off. No molecules have been generated.
+Step 0 complete. Step 1 pre-registered, gates G1 and G2 passed, clean upstream DiffSBDD
+vendored and the checkpoint verified pristine. Generating 100 valid molecules for each of 133
+external catalytic-Zn targets. The coordination checker is not yet written — that is the next
+task, and it needs no GPU.
 
 ## Layout
 
