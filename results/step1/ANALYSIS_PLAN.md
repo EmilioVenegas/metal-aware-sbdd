@@ -60,12 +60,13 @@ contributes ligands.
 
 ## 4. Endpoints and Cohort Structure
 
-> **Pre-generation Amendment (2026-08-16 — Clean External Benchmark & Cohort Restructuring):**
+> **Pre-generation Amendment (2026-08-16 — Overbuilt Clean External Benchmark & Cohort Restructuring):**
 >
-> 1. **PRIMARY COHORT — Clean External Catalytic Zinc ($m = 25$ distinct 30% clusters / 28 targets):**
->    - 28 high-resolution catalytic Zinc metalloenzyme structures across 28 distinct enzyme families (`data/external_zn_test.pt`), forming **25 independent sequence clusters at 30% identity** (and 26 clusters at 90% identity).
->    - Curated across diverse families: VIM-1 MBL, NDM-1 MBL, IMP-1 MBL, HDAC1/2, HDAC8, bacterial HDAH, MMP-2, MMP-8, Anthrax Lethal Factor, Thermolysin, Neprilysin, Peptide Deformylase, Glyoxalase I, Aminopeptidase N, ERAP1, Alcohol Dehydrogenase, Farnesyltransferase, Geranylgeranyltransferase, Astacin, Nuclease S1, PSMA/GCPII, Carbonic Anhydrase, TACE/ADAM17, ACE, Carboxypeptidase A, LpxC Deacetylase, Botulinum Neurotoxin, and Insulin-Degrading Enzyme.
->    - Requirements: ≥2 protein sidechain donors within 2.8 Å (100% catalytic), strictly absent from CrossDocked manifest (0 of 19,476 PDBs), and bound drug-like native ligand (<4.5 Å from Zn) for the C1 control.
+> 1. **PRIMARY COHORT — Overbuilt Clean External Catalytic Zinc ($m = 51$ independent 30% clusters / 217 targets):**
+>    - 217 high-resolution catalytic Zinc metalloenzyme structures across diverse enzyme families (`data/external_zn_test.pt`), forming **51 independent sequence clusters at 30% sequence identity** (1 representative structure per cluster used for the benchmark, or pooled across cluster members).
+>    - **Strict CrossDocked Independence:** 0 hits at $\ge 30\%$ sequence identity against ALL 14,480 CrossDocked training PDBs under complete 1,000-hit pagination search.
+>    - **Catalytic Shell:** $\ge 2$ protein sidechain donors (His, Asp, Glu, Cys, etc.) within $\le 2.8$ Å of Zn.
+>    - **Direct Native Inhibitor Coordination:** Directly coordinated authentic drug-like inhibitor ($\ge 8$ heavy atoms, non-amino-acid, non-solvent) with a donor atom (N, O, S, P, Cl, F) within **$\le 2.5$ Å** of the catalytic Zn.
 >    - Serves as the primary, unconfounded test set for all headline claims.
 >
 > 2. **SECONDARY COHORT — CrossDocked Catalytic Zinc ($m = 30$):**
@@ -83,7 +84,7 @@ contributes ligands.
 >    - **Rationale:** Contaminated targets were included in the base model's training set with the metal deleted but with native, metal-coordinating ligand chemistry present. Model memorisation of native ligand shape/chemistry should suppress clashes with the virtual metal position.
 >    - **Consequence / Demotion Rule:** If the empirical result falsifies this prediction (i.e. if $\text{Violation Rate}_{\text{contaminated}} > \text{Violation Rate}_{\text{clean}}$), the contaminated CrossDocked cohort cannot be described as conservative, and the secondary cohort must be demoted to exploratory-only status.
 
-**Primary Endpoint:** Proportion of generated molecules exhibiting **≥1 violation of V1 or V2** at catalytic metal sites in the PRIMARY cohort (Clean External Catalytic Zinc, $m = 25$ independent sequence clusters). Binary per molecule.
+**Primary Endpoint:** Proportion of generated molecules exhibiting **≥1 violation of V1 or V2** at catalytic metal sites in the PRIMARY cohort (Overbuilt Clean External Catalytic Zinc, $m = 51$ independent sequence clusters). Binary per molecule.
 
 **Secondary Endpoints:**
 1. Primary violation rate on SECONDARY cohort (CrossDocked Catalytic Zinc, $m = 30$, reporting clean vs contaminated).
@@ -129,7 +130,7 @@ volume, not metals, and the framing changes.
 
 ## 7. Analysis
 
-- Molecules pooled within target; **protein sequence cluster (at 30% sequence identity) treated as the unit of resampling**.
+- Molecules pooled within target; **protein sequence cluster (at 30% sequence identity, $m = 51$) treated as the unit of resampling**.
 - Bootstrap over clusters, 10,000 resamples, BCa intervals, preventing pseudo-replication.
 - Paired comparisons by cluster wherever arms are compared.
 - Report per-cluster and per-target values, not only the pooled mean.
@@ -138,15 +139,15 @@ volume, not metals, and the framing changes.
 
 Computed and recorded **before generation**, across restructured cohorts:
 
-### 1. PRIMARY Cohort: Clean External Catalytic Zn ($m = 25$ independent 30% clusters / 28 targets)
-- **Cluster-level resampling ($m = 25$ clusters):**
-  - $N = 100$: $\text{MDE} = \mathbf{9.36\%}$ (delta = 0.0936, SE = 0.0339)
-  - $N = 250$: $\text{MDE} = \mathbf{9.01\%}$ (delta = 0.0901, SE = 0.0326)
-  - $N = 500$: $\text{MDE} = \mathbf{8.89\%}$ (delta = 0.0889, SE = 0.0322)
-- **Target-level reference ($m = 28$ targets):**
-  - $N = 100$: $\text{MDE} = \mathbf{8.80\%}$ (delta = 0.0880, SE = 0.0318)
-  - $N = 250$: $\text{MDE} = \mathbf{8.47\%}$ (delta = 0.0847, SE = 0.0306)
-  - $N = 500$: $\text{MDE} = \mathbf{8.36\%}$ (delta = 0.0836, SE = 0.0302)
+### 1. PRIMARY Cohort: Overbuilt Clean External Catalytic Zn ($m = 51$ independent 30% clusters / 217 targets)
+- **Cluster-level resampling ($m = 51$ independent clusters):**
+  - $N = 100$: $\text{MDE} = \mathbf{6.41\%}$ (delta = 0.0641, SE = 0.0232)
+  - $N = 250$: $\text{MDE} = \mathbf{6.17\%}$ (delta = 0.0617, SE = 0.0223)
+  - $N = 500$: $\text{MDE} = \mathbf{6.09\%}$ (delta = 0.0609, SE = 0.0220)
+- **Target-level reference ($m = 217$ targets):**
+  - $N = 100$: $\text{MDE} = \mathbf{3.06\%}$ (delta = 0.0306, SE = 0.0110)
+  - $N = 250$: $\text{MDE} = \mathbf{2.95\%}$ (delta = 0.0295, SE = 0.0106)
+  - $N = 500$: $\text{MDE} = \mathbf{2.91\%}$ (delta = 0.0291, SE = 0.0105)
 
 ### 2. SECONDARY Cohort: All CrossDocked Catalytic Zn ($m = 30$)
 - $N = 100$: $\text{MDE} = \mathbf{8.48\%}$ (delta = 0.0848, SE = 0.0307)
@@ -175,8 +176,8 @@ Computed and recorded **before generation**, across restructured cohorts:
 
 ### Operating Choice
 We select $\mathbf{N = 100}$ molecules per target.
-- For the PRIMARY clean external Zinc cohort under cluster-level resampling ($m = 25$ clusters), $N = 100$ yields $\text{MDE} = \mathbf{9.36\%}$, strictly below the minimum claimable effect threshold ($\sim 10\text{--}15\%$).
-- Increasing $N$ from 100 to 250 reduces MDE by only $0.35$ percentage points while multiplying inference compute by $2.5\times$, confirming $N = 100$ is statistically sufficient and computationally optimal within our 8 GB GPU constraint.
+- For the PRIMARY overbuilt clean external Zinc cohort under cluster-level resampling ($m = 51$ independent clusters), $N = 100$ yields $\text{MDE} = \mathbf{6.41\%}$, providing substantial margin below the minimum claimable effect threshold ($\sim 10\text{--}15\%$).
+- Increasing $N$ from 100 to 250 reduces MDE by only $0.24$ percentage points while multiplying inference compute by $2.5\times$, confirming $N = 100$ is statistically sufficient and computationally optimal within our 8 GB GPU constraint.
 
 ## 9. What would falsify the Step 1 claim
 
