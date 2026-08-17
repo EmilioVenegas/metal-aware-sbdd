@@ -58,28 +58,38 @@ coordination number (4 → tetrahedral 109.5°, 6 → octahedral 90/180°). Repo
 not part of the primary endpoint, because coordination number is ambiguous when the protein
 contributes ligands.
 
-## 4. Endpoints
+## 4. Endpoints and Cohort Structure
 
-> **Pre-generation Amendment (2026-08-16):**
-> 1. **Primary Subgroup — Catalytic Zinc (Zn):** Zinc is the pre-specified primary endpoint subgroup.
->    All 30 Zn test targets (100.0%) are confirmed catalytic (≥2 protein sidechain donors).
-> 2. **Incidental Exclusion:** Incidental metal sites (<2 protein sidechain donors; e.g. surface buffer
->    additives) are excluded from the primary endpoint. In our survey, 38 of 74 Mg test targets (51.4%)
->    are incidental crystallisation additives or weakly bound ions, which would dilute a true catalytic
->    coordination effect.
-> 3. **Secondary Subgroups:** Catalytic non-zinc metalloproteins (Mg, Ca, Mn, Fe, Co, Ni, Cu with ≥2
->    sidechain donors; 74 targets), and all-metal exploratory analysis.
+> **Pre-generation Amendment (2026-08-16 — Clean External Benchmark & Cohort Restructuring):**
+>
+> 1. **PRIMARY COHORT — Clean External Catalytic Zinc ($m = 30$):**
+>    - 30 high-resolution catalytic Zinc metalloenzyme targets from the PDB (`data/external_zn_test.pt`), covering diverse zinc enzyme families.
+>    - Requirements: ≥2 protein sidechain donors within 2.8 Å (100% catalytic), strictly absent from CrossDocked manifest (0 of 19,476 PDBs), <30% sequence identity to any CrossDocked training target, and bound drug-like native ligand (<4.5 Å from Zn) for the C1 control.
+>    - Serves as the primary, unconfounded test set for all headline claims.
+>
+> 2. **SECONDARY COHORT — CrossDocked Catalytic Zinc ($m = 30$):**
+>    - All 30 catalytic Zinc targets from the CrossDocked test split (`data/metal_target_split.pt`), with contamination status tracked per target (27 seen in base training, 3 clean).
+>
+> 3. **CONSISTENCY SUBSET — Clean CrossDocked Catalytic Zinc ($m = 3$):**
+>    - The 3 clean CrossDocked Zn targets. Evaluated strictly for directional consistency, never as a headline claim due to detection limits ($m = 3$).
+>
+> 4. **INCIDENTAL EXCLUSION:**
+>    - Incidental metal sites (<2 protein sidechain donors) are excluded from the primary and secondary endpoints. (In CrossDocked, 38 of 74 Mg targets are incidental crystallisation additives or weakly bound ions, which would dilute true catalytic coordination effects).
+>
+> 5. **CONTAMINATION BIAS CHECK (Pre-registered Hypothesis):**
+>    - We compare the primary violation rate on clean ($m = 18$) vs contaminated ($m = 86$) catalytic CrossDocked targets, pooled across metals and paired by target class where possible.
+>    - **Registered Prediction:** $\text{Violation Rate}_{\text{contaminated}} \le \text{Violation Rate}_{\text{clean}}$.
+>    - **Rationale:** Contaminated targets were included in the base model's training set with the metal deleted but with native, metal-coordinating ligand chemistry present. Model memorisation of native ligand shape/chemistry should suppress clashes with the virtual metal position.
+>    - **Consequence / Demotion Rule:** If the empirical result falsifies this prediction (i.e. if $\text{Violation Rate}_{\text{contaminated}} > \text{Violation Rate}_{\text{clean}}$), the contaminated CrossDocked cohort cannot be described as conservative, and the secondary cohort must be demoted to exploratory-only status.
 
-**Primary:** proportion of generated molecules exhibiting **≥1 violation of V1 or V2** at catalytic
-metal sites in the primary Zinc subgroup (reported on clean and full target sets). Binary per molecule.
-Chosen because it directly operationalises "generates as though the metal were empty space" and is
-robust to the coordination-number ambiguity above.
+**Primary Endpoint:** Proportion of generated molecules exhibiting **≥1 violation of V1 or V2** at catalytic metal sites in the PRIMARY cohort (Clean External Catalytic Zinc, $m = 30$). Binary per molecule.
 
-**Secondary:**
-1. Primary violation rate across catalytic non-zinc metalloprotein subgroups (Mg, Ca, Mn, Fe, etc.).
-2. Proportion forming ≥1 valid coordination bond.
-3. V3 rate among molecules that place a donor in the shell.
-4. Distributions of metal–donor distance and coordination number.
+**Secondary Endpoints:**
+1. Primary violation rate on SECONDARY cohort (CrossDocked Catalytic Zinc, $m = 30$, reporting clean vs contaminated).
+2. Primary violation rate across other catalytic metalloproteins (Mg, Ca, Mn, Fe, Co, Ni, Cu; 74 targets).
+3. Proportion forming ≥1 valid coordination bond.
+4. V3 rate among molecules that place a donor in the shell.
+5. Distributions of metal–donor distance and coordination number.
 
 ## 5. Controls
 
@@ -125,38 +135,42 @@ volume, not metals, and the framing changes.
 
 ## 8. Detection limit
 
-Computed and recorded **before generation**, across test cohorts:
+Computed and recorded **before generation**, across restructured cohorts:
 
-### Primary Subgroup: Catalytic Zinc (Zn)
-- **Clean Catalytic Zn targets ($m = 3$):**
-  - $N = 100$: $\text{MDE} = 49.62\%$ (delta = 0.4962, SE = 0.1093)
-  - $N = 250$: $\text{MDE} = 47.74\%$ (delta = 0.4774, SE = 0.1051)
-  - $N = 500$: $\text{MDE} = 47.10\%$ (delta = 0.4710, SE = 0.1037)
-  *(Note: $m=3$ has high statistical uncertainty; motivates reporting full vs clean cohorts and/or retraining Arm A on the split).*
-- **All Catalytic Zn targets ($m = 30$):**
-  - $N = 100$: $\text{MDE} = 8.48\%$ (delta = 0.0848, SE = 0.0307)
-  - $N = 250$: $\text{MDE} = 8.16\%$ (delta = 0.0816, SE = 0.0296)
-  - $N = 500$: $\text{MDE} = 8.05\%$ (delta = 0.0805, SE = 0.0292)
+### 1. PRIMARY Cohort: Clean External Catalytic Zn ($m = 30$)
+- $N = 100$: $\text{MDE} = \mathbf{8.48\%}$ (delta = 0.0848, SE = 0.0307)
+- $N = 250$: $\text{MDE} = \mathbf{8.16\%}$ (delta = 0.0816, SE = 0.0296)
+- $N = 500$: $\text{MDE} = \mathbf{8.05\%}$ (delta = 0.0805, SE = 0.0292)
 
-### Secondary Subgroups:
-- **Clean Catalytic All-Metal targets ($m = 18$):**
-  - $N = 100$: $\text{MDE} = 11.23\%$ (delta = 0.1123, SE = 0.0388)
-  - $N = 250$: $\text{MDE} = 10.80\%$ (delta = 0.1080, SE = 0.0373)
-  - $N = 500$: $\text{MDE} = 10.66\%$ (delta = 0.1066, SE = 0.0368)
-- **All Catalytic All-Metal targets ($m = 104$):**
-  - $N = 100$: $\text{MDE} = 4.44\%$ (delta = 0.0444, SE = 0.0157)
-  - $N = 250$: $\text{MDE} = 4.28\%$ (delta = 0.0428, SE = 0.0151)
-  - $N = 500$: $\text{MDE} = 4.22\%$ (delta = 0.0422, SE = 0.0149)
-- **All Test Metalloproteins ($m = 148$):**
-  - $N = 100$: $\text{MDE} = 3.71\%$ (delta = 0.0371, SE = 0.0132)
-  - $N = 250$: $\text{MDE} = 3.57\%$ (delta = 0.0357, SE = 0.0127)
-  - $N = 500$: $\text{MDE} = 3.53\%$ (delta = 0.0353, SE = 0.0125)
+### 2. SECONDARY Cohort: All CrossDocked Catalytic Zn ($m = 30$)
+- $N = 100$: $\text{MDE} = \mathbf{8.48\%}$ (delta = 0.0848, SE = 0.0307)
+- $N = 250$: $\text{MDE} = \mathbf{8.16\%}$ (delta = 0.0816, SE = 0.0296)
+- $N = 500$: $\text{MDE} = \mathbf{8.05\%}$ (delta = 0.0805, SE = 0.0292)
 
-**Operating Choice:** $N = 100$ molecules per target.
-For all catalytic Zn ($m = 30$), $N = 100$ gives an MDE of **8.48%**, which is below the minimum
-scientifically meaningful effect threshold ($\sim 10\text{--}15\%$) while keeping inference runtime
-within the 8 GB GPU constraint (~12–15 hours per arm). For the clean Zn subset ($m = 3$), the design
-cannot resolve effects below ~50%, requiring clean vs contaminated reporting or Arm A retraining.
+### 3. CONSISTENCY Cohort: Clean CrossDocked Catalytic Zn ($m = 3$)
+- $N = 100$: $\text{MDE} = \mathbf{49.62\%}$ (delta = 0.4962, SE = 0.1093)
+- $N = 250$: $\text{MDE} = \mathbf{47.74\%}$ (delta = 0.4774, SE = 0.1051)
+- $N = 500$: $\text{MDE} = \mathbf{47.10\%}$ (delta = 0.4710, SE = 0.1037)
+*(Directional consistency only; design cannot resolve effects below ~50% with $m=3$.)*
+
+### 4. Contamination Bias Check Cohorts:
+- **Clean Catalytic CrossDocked All-Metal ($m = 18$):**
+  - $N = 100$: $\text{MDE} = \mathbf{11.23\%}$ (delta = 0.1123, SE = 0.0388)
+  - $N = 250$: $\text{MDE} = \mathbf{10.80\%}$ (delta = 0.1080, SE = 0.0373)
+  - $N = 500$: $\text{MDE} = \mathbf{10.66\%}$ (delta = 0.1066, SE = 0.0368)
+- **Contaminated Catalytic CrossDocked All-Metal ($m = 86$):**
+  - $N = 100$: $\text{MDE} = \mathbf{4.90\%}$ (delta = 0.0490, SE = 0.0174)
+  - $N = 250$: $\text{MDE} = \mathbf{4.71\%}$ (delta = 0.0471, SE = 0.0167)
+  - $N = 500$: $\text{MDE} = \mathbf{4.65\%}$ (delta = 0.0465, SE = 0.0165)
+- **Full Catalytic CrossDocked All-Metal ($m = 104$):**
+  - $N = 100$: $\text{MDE} = \mathbf{4.44\%}$ (delta = 0.0444, SE = 0.0157)
+  - $N = 250$: $\text{MDE} = \mathbf{4.28\%}$ (delta = 0.0428, SE = 0.0151)
+  - $N = 500$: $\text{MDE} = \mathbf{4.22\%}$ (delta = 0.0422, SE = 0.0149)
+
+### Operating Choice
+We select $\mathbf{N = 100}$ molecules per target.
+- For the PRIMARY clean external Zinc cohort ($m = 30$), $N = 100$ yields $\text{MDE} = \mathbf{8.48\%}$, well below the smallest effect worth claiming ($\sim 10\text{--}15\%$).
+- Increasing $N$ from 100 to 250 reduces MDE by only $0.32$ percentage points while multiplying inference compute by $2.5\times$, confirming $N = 100$ is statistically sufficient and computationally optimal within our 8 GB GPU constraint.
 
 ## 9. What would falsify the Step 1 claim
 
