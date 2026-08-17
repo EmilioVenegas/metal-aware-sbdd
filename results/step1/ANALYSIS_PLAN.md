@@ -60,35 +60,43 @@ contributes ligands.
 
 ## 4. Endpoints and Cohort Structure
 
-> **Pre-generation Amendment (2026-08-16 — Overbuilt Clean External Benchmark & Cohort Restructuring):**
+> **Pre-generation Amendment (2026-08-16 — Strict Positive-Definition Filter, Final):**
 >
-> 1. **PRIMARY COHORT — Overbuilt Clean External Catalytic Zinc ($m = 51$ independent 30% clusters / 217 targets):**
->    - 217 high-resolution catalytic Zinc metalloenzyme structures across diverse enzyme families (`data/external_zn_test.pt`), forming **51 independent sequence clusters at 30% sequence identity** (1 representative structure per cluster used for the benchmark, or pooled across cluster members).
->    - **Strict CrossDocked Independence:** 0 hits at $\ge 30\%$ sequence identity against ALL 14,480 CrossDocked training PDBs under complete 1,000-hit pagination search.
->    - **Catalytic Shell:** $\ge 2$ protein sidechain donors (His, Asp, Glu, Cys, etc.) within $\le 2.8$ Å of Zn.
->    - **Direct Native Inhibitor Coordination:** Directly coordinated authentic drug-like inhibitor ($\ge 8$ heavy atoms, non-amino-acid, non-solvent) with a donor atom (N, O, S, P, Cl, F) within **$\le 2.5$ Å** of the catalytic Zn.
->    - Serves as the primary, unconfounded test set for all headline claims.
+> All figures below supersede the earlier m=51 entry. Filters applied:
+> non-polymer CCD type; not in metabolite/nucleotide/cofactor blacklist; RDKit
+> drug-likeness (≥12 HA, QED>0.1, MW≤1000); X-ray resolution ≤2.5 Å (cryo-EM
+> flagged separately); not a catalytic-dead mutant (title keyword); min coordinating-
+> donor distance >1.75 Å (excludes covalent adducts); same-UniProt cluster merge.
 >
-> 2. **SECONDARY COHORT — CrossDocked Catalytic Zinc ($m = 30$):**
->    - All 30 catalytic Zinc targets from the CrossDocked test split (`data/metal_target_split.pt`), with contamination status tracked per target (27 seen in base training, 3 clean).
+> 1. **PRIMARY COHORT — Clean External Catalytic Zinc:**
+>    - 134 targets surviving all strict filters (`data/external_zn_test_clean.pt`).
+>    - **27 sequence clusters at 30% identity; 25 after same-UniProt merge.**
+>    - **20 clusters are X-ray; 5 are cryo-EM (flagged separately, not counted in
+>      the primary analysis).**
+>    - Cluster report: `results/step1/external_zn_cluster_report.md`
+>    - Strict CrossDocked independence: <30% seq identity to any training PDB.
+>    - Catalytic shell: ≥2 protein sidechain donors within 2.8 Å of Zn.
+>    - Coordination: ≥1 donor (N/O/S) within 2.5 Å; min coord dist >1.75 Å.
 >
-> 3. **CONSISTENCY SUBSET — Clean CrossDocked Catalytic Zinc ($m = 3$):**
->    - The 3 clean CrossDocked Zn targets. Evaluated strictly for directional consistency, never as a headline claim due to detection limits ($m = 3$).
+> 2. **SECONDARY COHORT — CrossDocked Catalytic Zinc (m=30):**
+>    - All 30 catalytic Zinc targets from CrossDocked test split
+>      (`data/metal_target_split.pt`), contamination status tracked per target
+>      (27 seen in training, 3 clean).
 >
-> 4. **INCIDENTAL EXCLUSION:**
->    - Incidental metal sites (<2 protein sidechain donors) are excluded from the primary and secondary endpoints. (In CrossDocked, 38 of 74 Mg targets are incidental crystallisation additives or weakly bound ions, which would dilute true catalytic coordination effects).
+> 3. **CONSISTENCY SUBSET — Clean CrossDocked Catalytic Zinc (m=3):**
+>    - 3 clean CrossDocked Zn targets. Directional consistency only; never a
+>      headline claim (MDE ~50% at m=3).
 >
-> 5. **CONTAMINATION BIAS CHECK (Pre-registered Hypothesis):**
->    - We compare the primary violation rate on clean ($m = 18$) vs contaminated ($m = 86$) catalytic CrossDocked targets, pooled across metals and paired by target class where possible.
->    - **Registered Prediction:** $\text{Violation Rate}_{\text{contaminated}} \le \text{Violation Rate}_{\text{clean}}$.
->    - **Rationale:** Contaminated targets were included in the base model's training set with the metal deleted but with native, metal-coordinating ligand chemistry present. Model memorisation of native ligand shape/chemistry should suppress clashes with the virtual metal position.
->    - **Consequence / Demotion Rule:** If the empirical result falsifies this prediction (i.e. if $\text{Violation Rate}_{\text{contaminated}} > \text{Violation Rate}_{\text{clean}}$), the contaminated CrossDocked cohort cannot be described as conservative, and the secondary cohort must be demoted to exploratory-only status.
+> 4. **Cryo-EM targets (m=5):** Evaluated and reported as a sensitivity check;
+>    not pooled with X-ray primary due to lower coordination-geometry accuracy.
 
-**Primary Endpoint:** Proportion of generated molecules exhibiting **≥1 violation of V1 or V2** at catalytic metal sites in the PRIMARY cohort (Overbuilt Clean External Catalytic Zinc, $m = 51$ independent sequence clusters). Binary per molecule.
+**Primary Endpoint:** Proportion of generated molecules exhibiting **≥1 violation of V1 or V2**
+at catalytic metal sites in the PRIMARY X-ray cohort (m=20 independent clusters, n=134 targets).
+Binary per molecule.
 
 **Secondary Endpoints:**
-1. Primary violation rate on SECONDARY cohort (CrossDocked Catalytic Zinc, $m = 30$, reporting clean vs contaminated).
-2. Primary violation rate across other catalytic metalloproteins (Mg, Ca, Mn, Fe, Co, Ni, Cu; 74 targets).
+1. Primary violation rate on SECONDARY cohort (CrossDocked Catalytic Zinc, m=30).
+2. Primary violation rate across other catalytic metalloproteins (Mg, Ca, Mn, Fe, Co, Ni, Cu).
 3. Proportion forming ≥1 valid coordination bond.
 4. V3 rate among molecules that place a donor in the shell.
 5. Distributions of metal–donor distance and coordination number.
@@ -130,54 +138,55 @@ volume, not metals, and the framing changes.
 
 ## 7. Analysis
 
-- Molecules pooled within target; **protein sequence cluster (at 30% sequence identity, $m = 51$) treated as the unit of resampling**.
+- Molecules pooled within target; **protein sequence cluster (at 30% identity, m=20 X-ray
+  clusters) treated as the unit of resampling** for the primary analysis.
 - Bootstrap over clusters, 10,000 resamples, BCa intervals, preventing pseudo-replication.
 - Paired comparisons by cluster wherever arms are compared.
 - Report per-cluster and per-target values, not only the pooled mean.
+- Cryo-EM clusters (m=5) analysed in a separate sensitivity pass.
 
 ## 8. Detection limit
 
-Computed and recorded **before generation**, across restructured cohorts:
+Computed and recorded **before generation**, using the final filtered set.
 
-### 1. PRIMARY Cohort: Overbuilt Clean External Catalytic Zn ($m = 51$ independent 30% clusters / 217 targets)
-- **Cluster-level resampling ($m = 51$ independent clusters):**
-  - $N = 100$: $\text{MDE} = \mathbf{6.41\%}$ (delta = 0.0641, SE = 0.0232)
-  - $N = 250$: $\text{MDE} = \mathbf{6.17\%}$ (delta = 0.0617, SE = 0.0223)
-  - $N = 500$: $\text{MDE} = \mathbf{6.09\%}$ (delta = 0.0609, SE = 0.0220)
-- **Target-level reference ($m = 217$ targets):**
-  - $N = 100$: $\text{MDE} = \mathbf{3.06\%}$ (delta = 0.0306, SE = 0.0110)
-  - $N = 250$: $\text{MDE} = \mathbf{2.95\%}$ (delta = 0.0295, SE = 0.0106)
-  - $N = 500$: $\text{MDE} = \mathbf{2.91\%}$ (delta = 0.0291, SE = 0.0105)
+The SE of a proportion under cluster-level bootstrap resampling is `sqrt(p(1-p)/m)`.
+N (molecules per target) does not appear in this formula once N is large enough that the
+within-cluster estimate is stable; N=100 is sufficient at all predicted violation rates.
+MDE at 80% power, two-tailed α=0.05: `(z_α/2 + z_β) × SE = 2.802 × SE`.
 
-### 2. SECONDARY Cohort: All CrossDocked Catalytic Zn ($m = 30$)
-- $N = 100$: $\text{MDE} = \mathbf{8.48\%}$ (delta = 0.0848, SE = 0.0307)
-- $N = 250$: $\text{MDE} = \mathbf{8.16\%}$ (delta = 0.0816, SE = 0.0296)
-- $N = 500$: $\text{MDE} = \mathbf{8.05\%}$ (delta = 0.0805, SE = 0.0292)
+All MDE figures use `p=0.5` (maximum-variance, most conservative assumption).
 
-### 3. CONSISTENCY Cohort: Clean CrossDocked Catalytic Zn ($m = 3$)
-- $N = 100$: $\text{MDE} = \mathbf{49.62\%}$ (delta = 0.4962, SE = 0.1093)
-- $N = 250$: $\text{MDE} = \mathbf{47.74\%}$ (delta = 0.4774, SE = 0.1051)
-- $N = 500$: $\text{MDE} = \mathbf{47.10\%}$ (delta = 0.4710, SE = 0.1037)
-*(Directional consistency only; design cannot resolve effects below ~50% with $m=3$.)*
+### PRIMARY Cohort: Clean External Catalytic Zn
 
-### 4. Contamination Bias Check Cohorts:
-- **Clean Catalytic CrossDocked All-Metal ($m = 18$):**
-  - $N = 100$: $\text{MDE} = \mathbf{11.23\%}$ (delta = 0.1123, SE = 0.0388)
-  - $N = 250$: $\text{MDE} = \mathbf{10.80\%}$ (delta = 0.1080, SE = 0.0373)
-  - $N = 500$: $\text{MDE} = \mathbf{10.66\%}$ (delta = 0.1066, SE = 0.0368)
-- **Contaminated Catalytic CrossDocked All-Metal ($m = 86$):**
-  - $N = 100$: $\text{MDE} = \mathbf{4.90\%}$ (delta = 0.0490, SE = 0.0174)
-  - $N = 250$: $\text{MDE} = \mathbf{4.71\%}$ (delta = 0.0471, SE = 0.0167)
-  - $N = 500$: $\text{MDE} = \mathbf{4.65\%}$ (delta = 0.0465, SE = 0.0165)
-- **Full Catalytic CrossDocked All-Metal ($m = 104$):**
-  - $N = 100$: $\text{MDE} = \mathbf{4.44\%}$ (delta = 0.0444, SE = 0.0157)
-  - $N = 250$: $\text{MDE} = \mathbf{4.28\%}$ (delta = 0.0428, SE = 0.0151)
-  - $N = 500$: $\text{MDE} = \mathbf{4.22\%}$ (delta = 0.0422, SE = 0.0149)
+| Analysis level | m | MDE (80% power) |
+|---|---|---|
+| Cluster-level resampling — X-ray only (primary) | 20 | **31.3%** |
+| Cluster-level resampling — all methods | 25 | **28.0%** |
+| Target-level reference (ignores cluster structure) | 134 | **12.1%** |
 
-### Operating Choice
-We select $\mathbf{N = 100}$ molecules per target.
-- For the PRIMARY overbuilt clean external Zinc cohort under cluster-level resampling ($m = 51$ independent clusters), $N = 100$ yields $\text{MDE} = \mathbf{6.41\%}$, providing substantial margin below the minimum claimable effect threshold ($\sim 10\text{--}15\%$).
-- Increasing $N$ from 100 to 250 reduces MDE by only $0.24$ percentage points while multiplying inference compute by $2.5\times$, confirming $N = 100$ is statistically sufficient and computationally optimal within our 8 GB GPU constraint.
+> [!WARNING]
+> **Marginal power warning (pre-registered).** The registered prediction is >30% violation
+> rate. With m=20 X-ray clusters the cluster-level MDE is 31.3% — the predicted effect
+> equals the MDE. Power against the registered alternative is therefore ~50%, not 80%.
+>
+> Consequence: a null result (violation rate <30%) is **not informative** at cluster level
+> with m=20. The study is adequately powered only if the true rate exceeds ~40%.
+>
+> **Mitigation:** We report both cluster-level and target-level (n=134, MDE=12.1%)
+> estimates. The target-level estimate treats each structure independently and risks
+> pseudo-replication within enzyme families, but it can detect effects at the registered
+> prediction. We pre-register that: (a) the cluster-level estimate is the headline number;
+> (b) target-level is a sensitivity check; (c) agreement between the two is a prerequisite
+> for any strong claim.
+
+### SECONDARY Cohort: CrossDocked Catalytic Zn (m=30)
+- MDE = **25.6%** (SE=0.0913) at 80% power
+
+### CONSISTENCY Cohort: Clean CrossDocked Catalytic Zn (m=3)
+- MDE = **80.9%** — directional consistency only; design cannot resolve effects at m=3.
+
+### Operating choice
+N = 100 molecules per target. Increasing N does not reduce cluster-level MDE.
 
 ## 9. What would falsify the Step 1 claim
 
@@ -186,6 +195,8 @@ We select $\mathbf{N = 100}$ molecules per target.
   frame mapping is subtly wrong despite G2.
 - The primary endpoint on generated molecules is low (< 10%) → the model avoids metal sites
   in practice despite never seeing them, and the premise is weaker than assumed.
+- Cluster-level and target-level estimates disagree by >2× → family-level confounding; the
+  claim is demoted to "warrants further investigation."
 
 Any of these is reported as the result. None is grounds for adjusting thresholds after the
 fact.
