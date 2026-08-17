@@ -33,9 +33,14 @@ We processed the Carbonic Anhydrase II zinc complex (PDB: 1CA2) using DiffSBDD's
 
 ## 0.4 — Measure the 'others' activation rate
 **Gate Status: PASSED**
-We measured the usage of index 10 (`'others'`) in DiffSBDD's `aa_encoder` by scanning the full training split of the `crossdocked_pocket10_processed.lmdb` file.
-* **Result:** Out of 53,986,004 pocket atoms, exactly 0 were assigned to the `'others'` category.
-* **Conclusion:** The index that could hypothetically capture metals or unrepresented atoms is completely dead. The metals are stripped entirely rather than being lumped into an unknown bucket.
+We measured the usage of index 10 (`'others'`) in DiffSBDD's `aa_encoder` (`{'C': 0, 'N': 1, 'O': 2, 'S': 3, 'B': 4, 'Br': 5, 'Cl': 6, 'P': 7, 'I': 8, 'F': 9, 'others': 10}`) across the training set:
+
+1. **DiffSBDD .npz artifact (8 Å distance cutoff, `process_crossdock.py` — base checkpoint training definition):**
+   * **Result:** Out of **22,634,480** pocket atoms (C: 14,514,405; O: 4,143,591; N: 3,803,499; S: 172,985), exactly **0** (0.0000%) were assigned to index 10 (`'others'`).
+2. **TargetDiff/Pocket2Mol LMDB artifact (10 Å cropped pocket):**
+   * **Result:** Out of **53,986,004** pocket atoms (C: 34,932,096; O: 9,710,769; N: 8,985,038; S: 358,101), exactly **0** (0.0000%) were assigned to index 10 (`'others'`).
+
+* **Conclusion:** In both artifacts, the index that could hypothetically capture metals or non-standard atoms is completely dead. Standard amino acid filtering (`is_aa(resname, standard=True)`) strictly excludes all HETATM metal ions before atom typing occurs, leaving index 10 unactivated and its embedding row untrained. New metal embedding rows in Arm C must be initialized fresh rather than warm-started from `'others'`.
 
 ---
 

@@ -60,14 +60,26 @@ contributes ligands.
 
 ## 4. Endpoints
 
-**Primary:** proportion of generated molecules exhibiting **≥1 violation of V1 or V2**.
-Binary per molecule. Chosen because it directly operationalises "generates as though the metal
-were empty space" and is robust to the coordination-number ambiguity above.
+> **Pre-generation Amendment (2026-08-16):**
+> 1. **Primary Subgroup — Catalytic Zinc (Zn):** Zinc is the pre-specified primary endpoint subgroup.
+>    All 30 Zn test targets (100.0%) are confirmed catalytic (≥2 protein sidechain donors).
+> 2. **Incidental Exclusion:** Incidental metal sites (<2 protein sidechain donors; e.g. surface buffer
+>    additives) are excluded from the primary endpoint. In our survey, 38 of 74 Mg test targets (51.4%)
+>    are incidental crystallisation additives or weakly bound ions, which would dilute a true catalytic
+>    coordination effect.
+> 3. **Secondary Subgroups:** Catalytic non-zinc metalloproteins (Mg, Ca, Mn, Fe, Co, Ni, Cu with ≥2
+>    sidechain donors; 74 targets), and all-metal exploratory analysis.
+
+**Primary:** proportion of generated molecules exhibiting **≥1 violation of V1 or V2** at catalytic
+metal sites in the primary Zinc subgroup (reported on clean and full target sets). Binary per molecule.
+Chosen because it directly operationalises "generates as though the metal were empty space" and is
+robust to the coordination-number ambiguity above.
 
 **Secondary:**
-1. Proportion forming ≥1 valid coordination bond.
-2. V3 rate among molecules that place a donor in the shell.
-3. Distributions of metal–donor distance and coordination number.
+1. Primary violation rate across catalytic non-zinc metalloprotein subgroups (Mg, Ca, Mn, Fe, etc.).
+2. Proportion forming ≥1 valid coordination bond.
+3. V3 rate among molecules that place a donor in the shell.
+4. Distributions of metal–donor distance and coordination number.
 
 ## 5. Controls
 
@@ -113,18 +125,38 @@ volume, not metals, and the framing changes.
 
 ## 8. Detection limit
 
-Computed and recorded **before generation**, once the split's target count is fixed:
+Computed and recorded **before generation**, across test cohorts:
 
-- number of targets *m*: `148` (metalloprotein test targets, from `data/metal_target_split.pt`)
-- molecules per target *N*: `100` (primary; evaluated at 14,800 molecules per arm)
-- minimum detectable difference in the primary endpoint, paired by target, α = 0.05,
-  power 0.8: `3.71%` (delta = 0.0371) for N = 100 (`3.57%` for N = 250, `3.53%` for N = 500;
-  conservative bound `4.87%` for N = 100 under high heterogeneity $\sigma_{\text{target}} = 0.20$).
+### Primary Subgroup: Catalytic Zinc (Zn)
+- **Clean Catalytic Zn targets ($m = 3$):**
+  - $N = 100$: $\text{MDE} = 49.62\%$ (delta = 0.4962, SE = 0.1093)
+  - $N = 250$: $\text{MDE} = 47.74\%$ (delta = 0.4774, SE = 0.1051)
+  - $N = 500$: $\text{MDE} = 47.10\%$ (delta = 0.4710, SE = 0.1037)
+  *(Note: $m=3$ has high statistical uncertainty; motivates reporting full vs clean cohorts and/or retraining Arm A on the split).*
+- **All Catalytic Zn targets ($m = 30$):**
+  - $N = 100$: $\text{MDE} = 8.48\%$ (delta = 0.0848, SE = 0.0307)
+  - $N = 250$: $\text{MDE} = 8.16\%$ (delta = 0.0816, SE = 0.0296)
+  - $N = 500$: $\text{MDE} = 8.05\%$ (delta = 0.0805, SE = 0.0292)
 
-Selected *N* = 100: within-target sampling variance accounts for only 12.4% of total paired
-variance at N = 100 (87.6% between-target variation). Diminishing returns make N = 100 optimal,
-as the 3.71% MDE is far below the minimum scientifically meaningful effect (~10–15%) while
-fitting comfortably within the 8 GB single-GPU inference budget (~12–15 hours per arm).
+### Secondary Subgroups:
+- **Clean Catalytic All-Metal targets ($m = 18$):**
+  - $N = 100$: $\text{MDE} = 11.23\%$ (delta = 0.1123, SE = 0.0388)
+  - $N = 250$: $\text{MDE} = 10.80\%$ (delta = 0.1080, SE = 0.0373)
+  - $N = 500$: $\text{MDE} = 10.66\%$ (delta = 0.1066, SE = 0.0368)
+- **All Catalytic All-Metal targets ($m = 104$):**
+  - $N = 100$: $\text{MDE} = 4.44\%$ (delta = 0.0444, SE = 0.0157)
+  - $N = 250$: $\text{MDE} = 4.28\%$ (delta = 0.0428, SE = 0.0151)
+  - $N = 500$: $\text{MDE} = 4.22\%$ (delta = 0.0422, SE = 0.0149)
+- **All Test Metalloproteins ($m = 148$):**
+  - $N = 100$: $\text{MDE} = 3.71\%$ (delta = 0.0371, SE = 0.0132)
+  - $N = 250$: $\text{MDE} = 3.57\%$ (delta = 0.0357, SE = 0.0127)
+  - $N = 500$: $\text{MDE} = 3.53\%$ (delta = 0.0353, SE = 0.0125)
+
+**Operating Choice:** $N = 100$ molecules per target.
+For all catalytic Zn ($m = 30$), $N = 100$ gives an MDE of **8.48%**, which is below the minimum
+scientifically meaningful effect threshold ($\sim 10\text{--}15\%$) while keeping inference runtime
+within the 8 GB GPU constraint (~12–15 hours per arm). For the clean Zn subset ($m = 3$), the design
+cannot resolve effects below ~50%, requiring clean vs contaminated reporting or Arm A retraining.
 
 ## 9. What would falsify the Step 1 claim
 
