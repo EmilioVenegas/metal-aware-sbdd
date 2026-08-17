@@ -27,6 +27,19 @@ If it does not, the mapping is wrong and Step 1 stops until it is fixed. No gene
 number is computed or reported before G2 passes. This gate exists because every downstream
 number is meaningless under a bad transform, and a bad transform is easy to not notice.
 
+> **G2 result (2026-08-17, scripts/run_g2_validation.py):**
+> Measured over 22 X-ray representative targets (re-downloaded CIF, minimum-distance
+> Zn-ligand pair selection). N=31 coordinating donor atoms.
+> - 5th pct: 1.823 Å | **Median: 2.183 Å** | 95th pct: 2.372 Å
+> - **G2: PASS** (median within [1.9, 2.3] Å)
+>
+> One flag: **9UD7** A1EOY N08 remeasured at **1.73 Å** (< 1.75 Å covalent threshold).
+> Build step had stored 1.87 Å due to non-minimum-distance Zn selection. G2's
+> minimum-distance pair logic is correct. Applied pre-registered covalent exclusion rule:
+> 9UD7 and its 4 cluster members (9U64, 9LZV, 9KMB, 9ISD) removed.
+>
+> **Final benchmark after G2: n=133 targets, m_xray=21 clusters, m_cryo=5, m_total=26.**
+
 ## 3. The checker — thresholds fixed now
 
 Donor atoms are N, O, S. Non-donors are C and halogens.
@@ -205,7 +218,7 @@ is the worst case, not an operating estimate. The table below shows MDE over a r
 
 ### PRIMARY Cohort: Clean External Catalytic Zn (Amendment 3: resolution ≤2.8 Å)
 
-**Final counts:** n=138 targets, 29 sequence clusters, 27 after same-UniProt merge; **22 X-ray clusters (primary), 5 cryo-EM (stratified subgroup).**
+**Final counts (post-G2):** n=133 targets, 26 clusters after same-UniProt merge; **21 X-ray clusters (primary), 5 cryo-EM (stratified subgroup).** (9UD7 cluster excluded at G2 for covalent coordination.)
 
 MDE formula for paired comparison across m clusters: `MDE = (z_α/2 + z_β) × σ_d / √m`, where σ_d is the between-cluster SD of the paired difference (not the theoretical maximum for an independent proportion). N (molecules per target) does not appear once N≥100.
 
@@ -213,29 +226,29 @@ MDE formula for paired comparison across m clusters: `MDE = (z_α/2 + z_β) × �
 
 #### MDE table — Amendment 1
 
-| σ_d | label | m=22 | m=27 |
+| σ_d | label | m=21 | m=26 |
 |---|---|---|---|
-| 0.15 | plausible-low (within-pocket paired) | 9.0% | 8.1% |
-| 0.20 | plausible-mid | 11.9% | 10.8% |
-| 0.30 | plausible-high (unpaired proxy) | 17.9% | 16.2% |
-| 0.47 | theoretical bound (indep. proportions) | 28.0% | 25.3% |
+| 0.15 | plausible-low (within-pocket paired) | 9.2% | 8.2% |
+| 0.20 | plausible-mid | 12.2% | 11.0% |
+| 0.30 | plausible-high (unpaired proxy) | 18.3% | 16.5% |
+| 0.47 | theoretical bound (indep. proportions) | 28.7% | 25.8% |
 
 #### Per-comparison power assessment
 
 **C1: generated molecules vs native ligands**
 - Expected δ ≈ 0.25 (registered: generated >30%, native <5%)
 - σ_d ≈ 0.20–0.30 (unpaired, different populations)
-- MDE at m=22, σ_d=0.20: **11.9%** → C1 is **well-powered** (expected δ >> MDE at all plausible σ_d)
+- MDE at m=21, σ_d=0.20: **12.2%** → C1 is **well-powered** (expected δ >> MDE at all plausible σ_d)
 
 **C2: metal-site clash vs protein-atom clash (within molecule, paired)**
 - Expected δ ≈ 0.05–0.15 (metal site occupied more than typical buried protein atom)
 - σ_d ≈ 0.10–0.15 (paired within same molecule; correlation reduces variance)
-- MDE at m=22, σ_d=0.10: **5.9%** | σ_d=0.15: **9.0%** → C2 is **adequately powered** at plausible σ_d
+- MDE at m=21, σ_d=0.10: **6.1%** | σ_d=0.15: **9.2%** → C2 is **adequately powered** at plausible σ_d
 
 **C3: metal-site occupancy vs burial-matched decoy (within-pocket paired — PRIMARY)**
 - Expected δ ≈ 0.069 (registered 1.3× occupancy ratio; if metal occ=0.30, decoy=0.231)
 - σ_d ≈ 0.15 (within-pocket paired; optimistic lower bound)
-- MDE at m=22, σ_d=0.15: **9.0%** — exceeds expected δ of 6.9%
+- MDE at m=21, σ_d=0.15: **9.2%** — exceeds expected δ of 6.9%
 - m required to detect δ=0.069 at σ_d=0.15: **≥37 clusters**
 
 > [!WARNING]
