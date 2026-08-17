@@ -175,6 +175,35 @@ The C3 prediction is deliberately unflattering. If metal sites are occupied at c
 rate of arbitrary buried points, the honest conclusion is that the headline is about buried
 volume, not metals, and the framing changes.
 
+## 6b. Sampling definition — Amendment 4 (2026-08-17, pre-generation)
+
+**Blocking amendment. Fixed before any molecule is generated.**
+
+**N = 100 *valid* molecules per target.** "Valid" is upstream DiffSBDD's own criterion:
+`build_molecule` returns a molecule and RDKit sanitisation succeeds. This project does **not**
+modify validity semantics — see `MODIFICATIONS.md`, which records that the predecessor fork's
+`SanitizeMol` fallbacks were deliberately **not** ported precisely because they would change
+this denominator.
+
+**Recorded per target:** attempts, valid count, validity rate, and the failure mode of each
+invalid sample. Sampling proceeds in batches until 100 valid molecules are obtained, with a
+hard cap of **1000 attempts**; targets not reaching 100 valid within the cap are reported with
+their actual N and flagged, never silently dropped.
+
+**Pre-registered sensitivity analysis.** The primary endpoint is recomputed with invalid
+samples included in the denominator (counted as non-violating, the conservative direction).
+
+> **Rationale.** If molecules that fail to build are geometrically atypical near the metal —
+> plausible, since atoms crowded into a coordination site produce strained or unbuildable
+> bonding — then discarding them removes exactly the samples most likely to violate, biasing
+> the endpoint toward the null in a way that is invisible in the valid-only analysis.
+
+**Pre-registered check:** correlate per-target validity rate with per-target violation rate
+across clusters. A strong negative correlation is evidence that invalidity and metal-site
+occupancy share a cause, and in that case the all-attempts analysis becomes the headline
+rather than the sensitivity check. This reassignment rule is fixed now, not after seeing the
+correlation.
+
 ## 7. Analysis
 
 **Primary analysis:** GLMM with cluster as a random effect (logistic link; cluster intercept
