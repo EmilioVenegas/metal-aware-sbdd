@@ -54,11 +54,16 @@ def main():
     sdf_dir = outdir / "sdf"; sdf_dir.mkdir(exist_ok=True)
     manifest_path = outdir / f"generation_manifest_shard{args.shard}.jsonl"
 
+    # Resume from EVERY shard manifest, not only this shard's, so the run can be
+    # re-sharded (e.g. to fewer workers) without redoing completed targets.
     done = set()
-    if manifest_path.exists():
-        for line in manifest_path.read_text().splitlines():
+    for mf in sorted(outdir.glob("generation_manifest_shard*.jsonl")):
+        for line in mf.read_text().splitlines():
             if line.strip():
-                done.add(json.loads(line)["pdb_id"])
+                rec = json.loads(line)
+                if rec.get("status") == "complete":
+                    done.add(rec["pdb_id"])
+    if done:
         print(f"resuming: {len(done)} targets already complete", flush=True)
 
     blob = torch.load(args.targets, map_location="cpu", weights_only=False)
