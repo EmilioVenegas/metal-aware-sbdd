@@ -321,3 +321,31 @@ N = 100 molecules per target. Increasing N does not reduce cluster-level MDE.
 
 Any of these is reported as the result. None is grounds for adjusting thresholds after the
 fact.
+
+---
+
+## Amendment 5 (2026-08-17) — chelate-aware secondary endpoint
+
+**Declared after C1, before any generated molecule was analysed.** Informed solely by the
+native-ligand control, never by the generated data. See `results/step1/C1_RESULT.md`.
+
+C1 shows the registered V2 threshold (non-donor heavy atom within 2.70 Å) fires on **19.5% of
+native crystallographic ligands**, against a registered prediction of <5%. Every offending
+atom is a carbon at 2.47–2.66 Å, and 92% co-occur with a valid coordinating donor in the same
+molecule — the forced geometry of a chelating carboxylate or hydroxamate.
+
+**No registered threshold or endpoint is changed.** The primary endpoint remains
+"≥1 violation of V1 or V2", and the primary analysis remains the paired generated-vs-native
+contrast, which is unaffected by a non-zero native baseline.
+
+**Added as a secondary endpoint — V2-strict:** a non-donor heavy atom within 2.70 Å of the
+metal that is **not covalently bonded to a valid coordinating donor of the same molecule**.
+This excludes the chelate carbon while still catching a non-donor genuinely occupying the
+metal site.
+
+Registered prediction for V2-strict, made now: **native < 5%**. If V2-strict does not bring
+the native rate below 5%, the chelation explanation is incomplete and must be reported as
+such rather than extended with further exclusions.
+
+Both the registered V2 and V2-strict will be reported side by side for every cohort. If they
+disagree in direction, the registered V2 is the headline and the discrepancy is reported.
