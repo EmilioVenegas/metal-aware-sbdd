@@ -20,3 +20,13 @@ results/**/*.json
 
 .env
 .venv/
+
+# AI agent instructions and handoffs
+CLAUDE.md
+AGENTS.md
+docs/HANDOFF.md
+docs/RUNBOOK.md
+
+# logs
+logs/
+*.log
