@@ -115,14 +115,23 @@ def get_pocket_from_ligand(pdb_model, ligand, dist_cutoff=8.0):
             np.array([a.get_coord() for a in ligand.get_atoms()]))
 
     pocket_residues = []
+    allowed_metals = {'ZN', 'MG', 'FE', 'MN', 'CA', 'CU'}
     for residue in pdb_model.get_residues():
         if residue.id[1] == resi:
             continue  # skip ligand itself
 
+        resname = residue.get_resname().strip().upper()
+        is_std_aa = is_aa(residue.get_resname(), standard=True)
+        is_metal = (resname in allowed_metals and
+                    not residue.is_disordered() and
+                    all(not a.is_disordered() and a.get_altloc().strip() == '' for a in residue.get_atoms()))
+
+        if not (is_std_aa or is_metal):
+            continue
+
         res_coords = torch.from_numpy(
             np.array([a.get_coord() for a in residue.get_atoms()]))
-        if is_aa(residue.get_resname(), standard=True) \
-                and torch.cdist(res_coords, ligand_coords).min() < dist_cutoff:
+        if torch.cdist(res_coords, ligand_coords).min() < dist_cutoff:
             pocket_residues.append(residue)
 
     return pocket_residues

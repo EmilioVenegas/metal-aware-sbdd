@@ -94,11 +94,23 @@ class LigandPocketDDPM(pl.LightningModule):
 
         self.lig_type_encoder = self.dataset_info['atom_encoder']
         self.lig_type_decoder = self.dataset_info['atom_decoder']
+        # In the base full-atom configs (pocket_representation == 'full-atom'), pocket and
+        # ligand share the literal same atom_encoder/atom_decoder dict objects — verified by
+        # reading this branch before Step 2 Arm C, see docs/step2.md §4. That is wrong for a
+        # config that wants the pocket vocabulary to hold atom types (metals) the ligand
+        # generator is never asked to place. dataset_params['crossdock_metal'] sets the flag
+        # below to opt into a genuinely separate aa_encoder/aa_decoder even in full-atom mode;
+        # every other dataset entry has no such key, so `.get(..., False)` preserves the
+        # original shared-object behavior for them unchanged.
+        pocket_uses_aa_encoder = (
+            self.pocket_representation == 'CA'
+            or self.dataset_info.get('pocket_full_atom_uses_aa_encoder', False)
+        )
         self.pocket_type_encoder = self.dataset_info['aa_encoder'] \
-            if self.pocket_representation == 'CA' \
+            if pocket_uses_aa_encoder \
             else self.dataset_info['atom_encoder']
         self.pocket_type_decoder = self.dataset_info['aa_decoder'] \
-            if self.pocket_representation == 'CA' \
+            if pocket_uses_aa_encoder \
             else self.dataset_info['atom_decoder']
 
         smiles_list = None if eval_params.smiles_file is None \
@@ -728,7 +740,7 @@ class LigandPocketDDPM(pl.LightningModule):
         else:
             pocket_atoms = [a for res in biopython_residues
                             for a in res.get_atoms()
-                            if (a.element.capitalize() in self.pocket_type_encoder or a.element != 'H')]
+                            if a.element.capitalize() in self.pocket_type_encoder]
             pocket_coord = torch.tensor(np.array(
                 [a.get_coord() for a in pocket_atoms]),
                 device=self.device, dtype=FLOAT_TYPE)

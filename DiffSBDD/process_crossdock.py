@@ -50,11 +50,20 @@ def process_ligand_and_pocket(pdbfile, sdffile,
 
     # Find interacting pocket residues based on distance cutoff
     pocket_residues = []
+    allowed_metals = {'ZN', 'MG', 'FE', 'MN', 'CA', 'CU'}
     for residue in pdb_struct[0].get_residues():
+        resname = residue.get_resname().strip().upper()
+        is_std_aa = is_aa(residue.get_resname(), standard=True)
+        is_metal = (resname in allowed_metals and
+                    not residue.is_disordered() and
+                    all(not a.is_disordered() and a.get_altloc().strip() == '' for a in residue.get_atoms()))
+
+        if not (is_std_aa or is_metal):
+            continue
+
         res_coords = np.array([a.get_coord() for a in residue.get_atoms()])
-        if is_aa(residue.get_resname(), standard=True) and \
-                (((res_coords[:, None, :] - lig_coords[None, :, :]) ** 2).sum(
-                    -1) ** 0.5).min() < dist_cutoff:
+        if (((res_coords[:, None, :] - lig_coords[None, :, :]) ** 2).sum(
+                -1) ** 0.5).min() < dist_cutoff:
             pocket_residues.append(residue)
 
     pocket_ids = [f'{res.parent.id}:{res.id[1]}' for res in pocket_residues]
@@ -84,7 +93,8 @@ def process_ligand_and_pocket(pdbfile, sdffile,
         }
     else:
         full_atoms = np.concatenate(
-            [np.array([atom.element for atom in res.get_atoms()])
+            [np.array([atom.element.capitalize() if atom.element else res.get_resname().strip().capitalize()
+                       for atom in res.get_atoms()])
              for res in pocket_residues], axis=0)
         full_coords = np.concatenate(
             [np.array([atom.coord for atom in res.get_atoms()])
@@ -92,12 +102,25 @@ def process_ligand_and_pocket(pdbfile, sdffile,
         try:
             pocket_one_hot = []
             for a in full_atoms:
-                if a in amino_acid_dict:
+                a_cap = a.capitalize()
+                if a_cap in amino_acid_dict:
                     atom = np.eye(1, len(amino_acid_dict),
-                                  amino_acid_dict[a.capitalize()]).squeeze()
+                                  amino_acid_dict[a_cap]).squeeze()
+                elif a in amino_acid_dict:
+                    atom = np.eye(1, len(amino_acid_dict),
+                                  amino_acid_dict[a]).squeeze()
                 elif a != 'H':
-                    atom = np.eye(1, len(amino_acid_dict),
-                                  len(amino_acid_dict)).squeeze()
+                    # No 'others' bucket exists in this vocabulary (verified: constants.py's
+                    # 'crossdock'/'crossdock_metal' atom_encoder has no 'others' key). Falling
+                    # back to `len(amino_acid_dict) - 1` — as a prior version of this branch did
+                    # — silently mislabels a genuinely unrecognized atom as the *last real class*
+                    # (Fluorine), which is worse than not encoding it at all. Match the original
+                    # pre-metal-patch behavior instead: an all-zero row, i.e. no atom type claimed.
+                    if 'others' in amino_acid_dict:
+                        atom = np.eye(1, len(amino_acid_dict),
+                                      amino_acid_dict['others']).squeeze()
+                    else:
+                        atom = np.zeros(len(amino_acid_dict))
                 pocket_one_hot.append(atom)
             pocket_one_hot = np.stack(pocket_one_hot)
         except KeyError as e:

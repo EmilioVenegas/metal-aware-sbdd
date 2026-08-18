@@ -181,3 +181,28 @@ dataset_params['crossdock'] = {
       'atom_hist': {'C': 1570032, 'N': 273792, 'O': 396623, 'S': 26339, 'B': 0, 'Br': 0, 'Cl': 15055, 'P': 25975, 'I': 0, 'F': 30673},
       'aa_hist': {'A': 277175, 'C': 92406, 'D': 254046, 'E': 201833, 'F': 234995, 'G': 376966, 'H': 147704, 'I': 290683, 'K': 173210, 'L': 421883, 'M': 157813, 'N': 174241, 'P': 148581, 'Q': 120232, 'R': 173848, 'S': 274430, 'T': 247605, 'V': 326134, 'W': 88552, 'Y': 226668},
 }
+
+# Step 2 Arm C — 'crossdock' with a pocket vocabulary expanded to include catalytic metals.
+# Everything except aa_encoder/aa_decoder is a plain copy of dataset_params['crossdock']:
+# ligand chemistry (atom_encoder/decoder, bond tables, atom_hist) is untouched because Arm C
+# does not ask the model to place metal atoms as part of a generated ligand — only the pocket
+# gains the ability to represent one. See docs/step2.md §4 for why pocket and ligand vocabularies
+# must be genuinely separate dict objects here (in the base 'crossdock' full-atom config they are
+# literally the same object — see lightning_modules.py's pocket_representation branch).
+# Key casing matters and is verified, not assumed: process_crossdock.py's pocket one-hot loop
+# and lightning_modules.py's prepare_pocket() (inference-time) both key the vocabulary dict by
+# `atom.element.capitalize()` (e.g. "Zn", "Mg"), never by the uppercase PDB resname ("ZN"). Using
+# resname-style keys here would silently miss every metal atom at lookup time — both call sites
+# would fall through to the 'others'/fallback branch instead of the intended metal class.
+dataset_params['crossdock_metal'] = {k: v for k, v in dataset_params['crossdock'].items()}
+_METAL_AA_ENCODER = dict(dataset_params['crossdock']['atom_encoder'])
+_METAL_AA_DECODER = list(dataset_params['crossdock']['atom_decoder'])
+for _metal in ['Zn', 'Mg', 'Fe', 'Mn', 'Ca', 'Cu']:
+    _METAL_AA_ENCODER[_metal] = len(_METAL_AA_DECODER)
+    _METAL_AA_DECODER.append(_metal)
+dataset_params['crossdock_metal']['aa_encoder'] = _METAL_AA_ENCODER
+dataset_params['crossdock_metal']['aa_decoder'] = _METAL_AA_DECODER
+# Tells lightning_modules.py's full-atom pocket-encoder branch to use aa_encoder/aa_decoder
+# (the expanded, metal-aware vocabulary) instead of reusing atom_encoder/atom_decoder as the
+# base 'crossdock' full-atom config does. See the patch there for the other half of this.
+dataset_params['crossdock_metal']['pocket_full_atom_uses_aa_encoder'] = True
