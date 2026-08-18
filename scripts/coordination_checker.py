@@ -48,7 +48,8 @@ def _ranges_for(metal: str, elem: str):
 
 
 def check_molecule(coords: np.ndarray, elements: list[str], metal_xyz: np.ndarray,
-                   metal: str = "ZN", protein_donors: np.ndarray | None = None) -> dict:
+                   metal: str = "ZN", protein_donors: np.ndarray | None = None,
+                   bonds: list[tuple[int, int]] | None = None) -> dict:
     """Geometry of one molecule against one metal centre.
 
     coords/elements must be HEAVY ATOMS ONLY, in the same frame as metal_xyz.
@@ -59,6 +60,10 @@ def check_molecule(coords: np.ndarray, elements: list[str], metal_xyz: np.ndarra
     number and angular geometry are only meaningful over the combined sphere: a ligand
     donating one oxygen into a 3-His site is not "CN=1", it completes a tetrahedron.
     Omitting them reports ligand-only geometry, which is not a chemical quantity.
+
+    bonds: optional list of (atom_i, atom_j) index pairs (in coords) representing
+    covalent bonds in the ligand. Required for V2-strict (Amendment 5), which excludes
+    chelate carbons bonded to valid coordinating donors.
     """
     d = np.linalg.norm(coords - metal_xyz, axis=1)
 
@@ -84,6 +89,23 @@ def check_molecule(coords: np.ndarray, elements: list[str], metal_xyz: np.ndarra
     v2 = any(c["v2_shell"] for c in contacts)
     v3 = any(c["v3_malformed"] for c in contacts)
     valid_coord = [c for c in contacts if c["in_range"] and not c["v1_clash"]]
+    valid_donor_indices = {c["atom_index"] for c in valid_coord}
+
+    # V2-strict (Amendment 5): non-donor within shell NOT covalently bonded to any
+    # valid coordinating donor in the same molecule. Excludes chelate carbons.
+    adj = {i: set() for i in range(len(coords))}
+    if bonds:
+        for u, v in bonds:
+            if u < len(coords) and v < len(coords):
+                adj[u].add(v)
+                adj[v].add(u)
+
+    for c in contacts:
+        bonded_to_valid = bool(adj[c["atom_index"]] & valid_donor_indices)
+        c["bonded_to_valid_donor"] = bonded_to_valid
+        c["v2_strict"] = bool(c["v2_shell"] and not bonded_to_valid)
+
+    v2_strict = any(c["v2_strict"] for c in contacts)
 
     # Coordination geometry over the COMBINED sphere: protein donors + ligand donors.
     cn_ligand = len(valid_coord)
@@ -108,13 +130,17 @@ def check_molecule(coords: np.ndarray, elements: list[str], metal_xyz: np.ndarra
     return {
         # PRIMARY ENDPOINT: >=1 violation of V1 or V2
         "primary_violation": bool(v1 or v2),
-        "v1_clash": v1, "v2_shell_occupancy": v2, "v3_malformed": v3,
+        "primary_violation_strict": bool(v1 or v2_strict),
+        "v1_clash": v1,
+        "v2_shell_occupancy": v2,
+        "v2_shell_occupancy_strict": v2_strict,
+        "v3_malformed": v3,
         "has_valid_coordination": cn_ligand > 0,
         "n_valid_coordination": cn_ligand,
         "n_protein_donors": n_protein,
         "coordination_number_total": cn_total,
-        "min_dist_to_metal": round(float(d.min()), 3),
-        "nearest_element": elements[int(d.argmin())].upper(),
+        "min_dist_to_metal": round(float(d.min()), 3) if len(d) else None,
+        "nearest_element": elements[int(d.argmin())].upper() if len(d) else None,
         "n_shell_contacts": len(contacts),
         "coordination_rms_angle_dev": rms_dev,
         "contacts": contacts,
@@ -123,13 +149,20 @@ def check_molecule(coords: np.ndarray, elements: list[str], metal_xyz: np.ndarra
 
 def heavy_atoms(mol: Chem.Mol):
     conf = mol.GetConformer()
-    pos, els = [], []
+    pos, els, heavy_atom_map = [], [], {}
     for a in mol.GetAtoms():
         if a.GetAtomicNum() <= 1:
             continue
+        h_idx = len(pos)
+        heavy_atom_map[a.GetIdx()] = h_idx
         pos.append(list(conf.GetAtomPosition(a.GetIdx())))
         els.append(a.GetSymbol())
-    return np.array(pos, dtype=float), els
+    bonds = []
+    for b in mol.GetBonds():
+        b1, b2 = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        if b1 in heavy_atom_map and b2 in heavy_atom_map:
+            bonds.append((heavy_atom_map[b1], heavy_atom_map[b2]))
+    return np.array(pos, dtype=float), els, bonds
 
 
 def run_sdf(sdf: Path, metal_xyz: np.ndarray, metal: str, source: str, pdb_id: str,
@@ -140,12 +173,12 @@ def run_sdf(sdf: Path, metal_xyz: np.ndarray, metal: str, source: str, pdb_id: s
             out.append({"pdb_id": pdb_id, "source": source, "mol_index": k,
                         "unreadable": True})
             continue
-        pos, els = heavy_atoms(mol)
+        pos, els, bonds = heavy_atoms(mol)
         if len(pos) == 0:
             out.append({"pdb_id": pdb_id, "source": source, "mol_index": k,
                         "unreadable": True})
             continue
-        rec = check_molecule(pos, els, metal_xyz, metal, protein_donors)
+        rec = check_molecule(pos, els, metal_xyz, metal, protein_donors, bonds=bonds)
         rec.update({"pdb_id": pdb_id, "source": source, "mol_index": k,
                     "n_heavy_atoms": len(pos), "unreadable": False})
         out.append(rec)

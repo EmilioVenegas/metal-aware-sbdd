@@ -61,11 +61,16 @@ def main():
                     dists_to_decoy = np.linalg.norm(coords - decoy, axis=1)
                     decoy_occ.append(bool(np.any(dists_to_decoy <= 2.70)))
                     
+                mean_decoy_occ = float(np.mean(decoy_occ)) if decoy_occ else None
+                paired_diff = float(metal_occ) - mean_decoy_occ if mean_decoy_occ is not None else None
+
                 record = {
                     "pdb_id": pdb_id,
                     "mol_index": mol_idx,
                     "metal_occupied": metal_occ,
                     "decoy_occupied": decoy_occ,
+                    "mean_decoy_occupied": round(mean_decoy_occ, 5) if mean_decoy_occ is not None else None,
+                    "paired_occupancy_diff": round(paired_diff, 5) if paired_diff is not None else None,
                     "n_decoys": n_decoys
                 }
                 out_f.write(json.dumps(record) + "\n")

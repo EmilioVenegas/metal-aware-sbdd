@@ -99,3 +99,31 @@ def test_distorted_sphere_scores_worse_than_ideal():
     bad_lig = np.array([[2.0, 0.15, 0.0]])  # oxygen crowded against a protein donor
     distorted = check_molecule(bad_lig, ["O"], Z, "ZN", protein_donors=tet[:3])
     assert distorted["coordination_rms_angle_dev"] > ideal["coordination_rms_angle_dev"]
+
+
+# --- Amendment 5: V2-strict (chelate-aware) -----------------------------------
+
+def test_chelate_carbon_bonded_to_valid_donor_is_v2_but_not_v2_strict():
+    """A carbon at 2.55 A bonded to a valid coordinating oxygen at 2.05 A
+    is a registered V2 violation (chelate geometry) but NOT a V2-strict violation."""
+    coords = np.array([[2.05, 0, 0], [2.55, 0, 0]])
+    elements = ["O", "C"]
+    bonds = [(0, 1)]
+    r = check_molecule(coords, elements, Z, "ZN", bonds=bonds)
+    assert r["v2_shell_occupancy"] is True
+    assert r["primary_violation"] is True
+    assert r["v2_shell_occupancy_strict"] is False
+    assert r["primary_violation_strict"] is False
+
+
+def test_unbonded_carbon_in_shell_is_v2_and_v2_strict():
+    """A carbon at 2.55 A not bonded to any coordinating donor is BOTH
+    a registered V2 violation AND a V2-strict violation."""
+    coords = np.array([[2.55, 0, 0]])
+    elements = ["C"]
+    r = check_molecule(coords, elements, Z, "ZN", bonds=[])
+    assert r["v2_shell_occupancy"] is True
+    assert r["primary_violation"] is True
+    assert r["v2_shell_occupancy_strict"] is True
+    assert r["primary_violation_strict"] is True
+
