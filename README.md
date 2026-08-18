@@ -24,21 +24,34 @@ Because metal ions are parsed as `HETATM` records in standard PDB/CIF files, eve
 
 ---
 
-## Core Contributions
+## Core Contributions & Methodology
 
-1. **Metal Coordination Checker ([`scripts/coordination_checker.py`](file:///home/emilio/Documents/metal-aware-sbdd/scripts/coordination_checker.py))**
+1. **Metal Coordination Checker**
    - Implements rigorous geometric validation of metal-ligand coordination chemistry missing from standard benchmarks like PoseBusters and GenBench3D.
-   - Evaluates:
-     - **V1 (Clash)**: Van der Waals clashes within the inner coordination sphere.
-     - **V2 (Shell Occupancy)**: Non-donor atoms (e.g., carbon, halogen) invading the coordination sphere.
-     - **V3 (Malformed Distance)**: Donor atoms present but at unphysical bond lengths.
-     - **Valid Coordination & Denticity**: Correct element-pair donor distances, angular geometry, and coordination numbers.
-2. **Empirical Failure Measurement with Rigorous Controls**
-   - Benchmarks generative models against a curated, strictly filtered test set of catalytic zinc proteins ($m=22$ independent sequence clusters at 30% sequence identity).
+   - Evaluates Van der Waals clashes (V1), non-donor shell invasion (V2), malformed distances (V3), and angular geometry/denticity.
+2. **Empirical Failure Measurement with Rigorous Controls (Step 1)**
+   - Benchmarks generative models against a curated, strictly filtered test set of catalytic zinc proteins ($m=26$ independent sequence clusters).
    - Paired controls (native complexes and burial-matched decoy points) establish that coordination failure is specific to metal neglect rather than general 3D generative geometric noise.
-3. **Representation-Aware Generative Modeling**
-   - Restores explicit metal coordinates and element types to the pocket conditioning tensor.
-   - A multi-arm ablation study isolating representation defects from training data volume effects.
+3. **Multi-Arm Ablation Study (Step 2)**
+   - **Arm A (Status Quo):** Base model evaluation.
+   - **Arm B (Data-Only Fix):** Full fine-tuning on a metalloprotein-enriched dataset, maintaining the broken (metal-blind) representation. 
+   - **Arm C (Representation Fix):** Retaining metal atoms during preprocessing, adding new metal atom types to the conditioning vocabulary, and adapting the model via targeted LoRA.
+   - This isolates whether the field-wide failure is merely a training data oversight or a fundamental representation bug.
+4. **Generalization across Modern Architectures (Step 3)**
+   - Evaluation of the bug and fix mechanisms on recent state-of-the-art generative frameworks (TargetDiff, MolDiff, SurfGen, FlagGNN) to prove this is a universal SBDD bottleneck.
+
+---
+
+## Recent Advances & Project Status (August 2026)
+
+- **Step 1 (Baseline Verification) is COMPLETE:** The status quo model (Arm A) successfully reproduces training-ligand density but completely fails at coordination chemistry, achieving only a 19.98% valid coordination rate with a 25-29° angular RMSD error.
+- **Step 2 (Training Ablation) is COMPLETE:** 
+  - **Arm B** (Novel Metalloprotein Split) finished full fine-tuning.
+  - **Arm C** (Metal-Aware Vocabulary + LoRA) finished fine-tuning 9.5x faster than Arm B due to isolating the gradient to 0.7% of parameters (adapter matrices + new metal vocabulary embedding rows). 
+  - *Data Hygiene Check:* Mathematically verified zero overlap (leakage) between the Arm C training splits and the external 133-target Zinc evaluation cohort.
+- **Step 3 (Baseline De-risking) is COMPLETE:** We formally executed a "Kill Check" evaluating whether a cheap, post-hoc SMARTS filter (for known Zinc-Binding Groups) on Arm A's broken outputs could act as a practical bypass. The filtered molecules achieved only a **24.96%** valid coordination rate. This proves definitively that explicitly learning 3D geometric orientation is strictly required; a post-hoc functional group filter is not a viable substitute.
+
+*Currently actively generating ligands from the Arm B & Arm C checkpoints for final 4-level GLMM statistical evaluation.*
 
 ---
 
@@ -46,27 +59,22 @@ Because metal ions are parsed as `HETATM` records in standard PDB/CIF files, eve
 
 ```
 metal-aware-sbdd/
-├── DiffSBDD/                  # Vendored DiffSBDD architecture & equivariant diffusion dynamics
-│   ├── equivariant_diffusion/ # EGNN dynamics and continuous diffusion modules
-│   ├── configs/               # Model and dataset configuration files
-│   └── analysis/              # SA_Score, docking, and molecular evaluation tools
-├── scripts/                   # Dataset curation, generation, checker, and analysis pipelines
+├── DiffSBDD/                  # Vendored architecture & equivariant diffusion dynamics
+├── scripts/                   # Curations, generation, checker, and analysis pipelines
 │   ├── coordination_checker.py       # Geometric metal coordination checker
-│   ├── generate_step1.py             # DiffSBDD inference harness across targets
-│   ├── place_c3_decoys.py            # Burial-matched decoy placement for paired controls
-│   ├── measure_c3_occupancy.py       # C3 control occupancy evaluation
-│   ├── build_strictly_clean_zn_set.py# External zinc benchmark dataset curator
-│   └── refilter_zn_set.py            # Quality filters & sequence identity clustering
-├── results/                   # Pre-registered analysis plans and experimental outputs
-│   ├── step0/                 # Step 0 baseline reproducibility and verification
-│   └── step1/                 # Step 1 external zinc benchmark and coordination results
-│       ├── ANALYSIS_PLAN.md   # Pre-registered analysis protocol & power calculations
-│       └── C1_RESULT.md       # Native coordination control results
-├── docs/                      # Research plan and step-by-step progress tracking
+│   ├── generate_step1.py             # Model inference generation harness
+│   ├── run_smarts_baseline.py        # Post-hoc functional group kill-check filter
+│   ├── evaluate_step2_glmm.py        # 4-arm Generalized Estimating Equation (GEE) script
+│   └── verify_independent_leakage.py # Dataset overlap verifier
+├── results/                   # Experimental outputs and inference artifacts
+│   ├── step1/                 # Arm A outputs and native controls
+│   ├── step2/                 # Arm B and Arm C outputs and checkpoint generation logs
+│   └── step3_smarts_baseline/ # SMARTS kill-check outputs
+├── docs/                      # Research plan and progress tracking
 │   ├── plan.md                # Master research plan and experimental gates
-│   └── step0.md               # Step 0 setup and validation checklist
-├── tests/                     # Unit tests for geometry thresholds and checkers
-│   └── test_coordination_checker.py
+│   ├── modern_architectures.md# SOTA SBDD architectures for step 3 evaluation
+│   ├── perspectives.md        # Alternative hypothesis and theoretical additions
+│   └── step3_smarts_baseline.md # SMARTS kill check formal record
 └── README.md
 ```
 
@@ -79,7 +87,7 @@ This project adheres to strict pre-registration and falsification principles:
 - **Controlled Hypotheses**:
   - **C1 (Native Control)**: Validates that native ligands satisfy checker thresholds.
   - **C2 (Model Failure)**: Quantifies coordination failure rates in unconditioned models.
-  - **C3 (Metal-Specific Decoy Control)**: Compares metal occupancy against burial-matched pocket decoy locations to rule out generic pocket-filling artifacts.
+  - **C3 (Metal-Specific Decoy Control)**: Compares metal occupancy against burial-matched pocket decoy locations.
 - **Minimum Detectable Effect (MDE)**: Statistical power and MDEs are calculated a priori for all comparisons across sequence clusters.
 
 ---
@@ -93,28 +101,23 @@ This project adheres to strict pre-registration and falsification principles:
 
 ### Environment Setup
 
-Create and activate the environment:
+Create and activate the environments:
 ```bash
 conda env create -f DiffSBDD/environment.yaml
 conda activate diffsbdd
 ```
-
-### Running Unit Tests
-
-Run the geometric coordination test suite:
-```bash
-pytest tests/test_coordination_checker.py -v
-```
+*(Note: Some downstream evaluations like GLMM stats and ProLIF use the isolated `ifp` and `atomica-interface` environments).*
 
 ### Running the Metal Coordination Checker
 
 To evaluate a generated ligand or native complex against a target protein:
 ```bash
 python scripts/coordination_checker.py \
-  --receptor path/to/receptor.pdb \
-  --ligand path/to/ligand.sdf \
-  --metal-element ZN \
-  --output-json results/coordination_summary.json
+  --targets path/to/targets.pt \
+  --sdf-dir path/to/generated_ligands_dir/ \
+  --source generated \
+  --protein-donors path/to/donors.json \
+  --out results/coordination_summary.jsonl
 ```
 
 ---
