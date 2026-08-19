@@ -76,6 +76,10 @@ def main():
     t0 = time.time()
     ck = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     model = LigandPocketDDPM(**dict(ck["hyper_parameters"]))
+    if any("lora_A" in k for k in ck["state_dict"]):
+        sys.path.insert(0, str(REPO / "scripts"))
+        from lora import apply_lora
+        apply_lora(model)
     model.load_state_dict(ck["state_dict"])
     model = model.cuda().eval()
     print(f"model loaded in {time.time()-t0:.1f}s", flush=True)

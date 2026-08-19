@@ -24,11 +24,19 @@ results/**/*.jsonl
 .env
 .venv/
 
-# AI agent instructions and handoffs
+# internal working documents — strategy, roadmaps, reading notes, manuscript drafts.
+# The repository publishes analysis: pre-registered plans, results, checker code, figures.
 CLAUDE.md
 AGENTS.md
 docs/HANDOFF.md
 docs/RUNBOOK.md
+docs/plan.md
+docs/step0.md
+docs/step2.md
+docs/perspectives.md
+docs/modern_architectures.md
+docs/study/
+docs/paper/
 
 # logs
 logs/

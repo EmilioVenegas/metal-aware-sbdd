@@ -6,20 +6,25 @@ from pathlib import Path
 from rdkit import Chem
 
 def main():
-    decoy_file = Path("data/c3_decoys.json")
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--decoys", default="data/c3_decoys.json", help="Path to c3_decoys.json")
+    parser.add_argument("--sdf-dir", default="results/step1/generation/sdf", help="Path to SDF directory")
+    parser.add_argument("--out", default="results/step1/checker/c3_occupancy.jsonl", help="Path to output JSONL")
+    args = parser.parse_args()
+
+    decoy_file = Path(args.decoys)
     if not decoy_file.exists():
-        print("data/c3_decoys.json not found. Run step 1 first.")
+        print(f"{decoy_file} not found. Run step 1 first.")
         sys.exit(1)
         
     with open(decoy_file, 'r') as f:
         data = json.load(f)
         
-    out_dir = Path("results/step1/checker")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / "c3_occupancy.jsonl"
+    out_file = Path(args.out)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     
-    gen_dir = Path("results/step1/generation/sdf")
-    
+    gen_dir = Path(args.sdf_dir)
     skipped = []
     processed = 0
     
