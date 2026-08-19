@@ -258,7 +258,7 @@ python docs/figures/make_readme_figures.py
 
 ---
 
-## Credit and licence
+## Credit and license
 
 `DiffSBDD/` is vendored from [arneschneuing/DiffSBDD](https://github.com/arneschneuing/DiffSBDD)
 at commit `5d0d38d`, MIT licensed; `MODIFICATIONS.md` records every deviation. Project code is
