@@ -16,7 +16,7 @@
 
 ---
 
-## The bug, verified by reading source
+## The bug
 
 Metal ions are `HETATM` records with resnames `ZN`, `MG`, `FE`, `MN`, `CA`, `CU`. Every
 pocket-extraction filter in the CrossDocked lineage removes them:
@@ -30,10 +30,10 @@ pocket-extraction filter in the CrossDocked lineage removes them:
 DiffSBDD is the stricter case: the checkpoint used here also has no metal entry in its
 pocket vocabulary (`dataset_params['crossdock']['atom_encoder']`, ten elements, closed set).
 
-**Precision matters.** TargetDiff and Pocket2Mol resolve elements through RDKit's periodic
-table and *could* represent zinc if handed it. The binding constraint is the record filter,
-not the element vocabulary. The defensible claim is *"metal ions never reach the model"* —
-never *"these models cannot represent metals."*
+TargetDiff and Pocket2Mol resolve elements through RDKit's periodic table and *could* represent
+zinc if handed it. The binding constraint is the record filter, not the element vocabulary. The
+defensible claim is *"metal ions never reach the model"* — never *"these models cannot represent
+metals."*
 
 The lineage is live, not historical: MolCRAFT and DrugFlow reuse the same preprocessed
 `crossdocked_pocket10` files and independently filter metals through their own vocabularies.
@@ -118,14 +118,14 @@ in the shell. The paired protein-atom control (C2) shows the failure is metal-sp
 general geometric sloppiness: the same molecules clash with ordinary pocket protein atoms two
 orders of magnitude less often.
 
-**One Step 1 result did *not* confirm, and is reported as such.** The burial-matched decoy
-control (C3) came in at 1.181× metal-site vs decoy occupancy with a paired CI crossing zero, and
+**C3 did not confirm.** The burial-matched decoy control came in
+at 1.181× metal-site vs decoy occupancy with a paired CI crossing zero, and
 the measured σ_d (0.2998) exceeded the pre-registered σ_d ≤ 0.10 needed for a null to be
 interpretable. C3 is **unresolved, not confirmatory**. The model is not preferentially homing in
 on the metal site — it reproduces training-ligand density generically, and when an atom does
 land near the metal, the chemistry is wrong.
 
-**Step 2 Arm B — data scarcity falsified.** Fine-tuning on metalloprotein-enriched data through
+**Step 2 Arm B — fine-tuning does not close the gap.** Fine-tuning on metalloprotein-enriched data through
 the unmodified, metal-blind representation *lowers* the valid-coordination rate to 10.58%
 (cluster bootstrap 13.79%, 95% CI [9.16%, 18.77%]), against a pre-registered falsification
 threshold of ≤30%. The distance histogram shows why: the fine-tuned model does not learn to
@@ -148,7 +148,7 @@ coordination sphere, one dot per molecule:
 
 *Zn²⁺ ionic radius (0.74 Å) is the Shannon four-coordinate value. Top panels show 2D radial cross-sections (one dot per molecule, 600 sampled per arm); bottom panels show the aligned bilateral radial density profile spanning the diameter of the sphere (percentages are geometric distance-only; the full valid-coordination endpoint additionally requires the contacting atom to be a chemically valid N, O, or S donor).*
 
-**Step 3 kill check, run early — the pre-registered threat is live.** A post-hoc SMARTS filter
+**Step 3 kill check, run early — the SMARTS baseline beats Arm A.** A post-hoc SMARTS filter
 for known zinc-binding groups applied to the *unmodified* base model recovers 24.45% valid
 coordination among the 38% of molecules it keeps — better than Arm A's raw 19.98%. Any
 representation fix has to beat this cheap baseline on rate, not only on yield per molecule
@@ -171,8 +171,8 @@ generated.
 
 - **Pre-registration.** Analysis plans, endpoints, thresholds and decision rules are committed
   before the data they judge (`results/step1/ANALYSIS_PLAN.md`,
-  `results/step2/ANALYSIS_PLAN_ARMB.md`, `results/step2/ANALYSIS_PLAN_ARMC.md`). Amendments are
-  dated addenda; nothing is rewritten in place.
+  `results/step2/ANALYSIS_PLAN_ARMB.md`, `results/step2/ANALYSIS_PLAN_ARMC.md`); if a reported
+  figure later needs correcting, the fix is a dated note in that file, not a silent edit.
 - **Every claim carries a control that could have detected the positive.** C1 native ligands
   (is the checker's threshold merely too strict?), C2 protein-atom clash paired within molecule
   (is the model sloppy everywhere?), C3 burial-matched decoys paired within pocket (is the metal
@@ -182,8 +182,6 @@ generated.
 - **Failed gates are reported with their numbers.** Step 1's primary endpoint came in at 18.38%
   against a registered >30% prediction, and C3 did not confirm. Both are in the results
   documents.
-- **Corrections are visible.** Where a reported figure could not be reproduced from the raw
-  checker output, the file carries a dated correction block rather than a silent edit.
 
 Hardware: everything here runs on a single 8 GB consumer GPU and 32 CPU cores.
 
