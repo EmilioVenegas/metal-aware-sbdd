@@ -93,7 +93,7 @@ representation is the bug — and it is inherited across the field.
 
 All rates below are recomputed directly from the checker output on the primary X-ray cohort
 (12,700 molecules per generative arm, 100 valid molecules per target) by
-`scripts/make_readme_figures.py`, so the figures cannot drift from the underlying data.
+`docs/figures/make_readme_figures.py`, so the figures cannot drift from the underlying data.
 
 <p align="center">
   <img src="docs/figures/valid_coordination_by_arm.png" width="700"
@@ -132,6 +132,14 @@ coordinate the metal, it learns to **avoid the region**.
 <p align="center">
   <img src="docs/figures/zn_distance_distribution.png" width="760"
        alt="Distance from zinc to the nearest ligand heavy atom: natives peak inside the valid 1.90-2.35 A window, Arm A is diffuse, Arm B is shifted outward with a large fraction beyond 5 A">
+</p>
+
+The same distances, read radially instead of along an axis — a cross-section through the
+coordination sphere, one dot per molecule:
+
+<p align="center">
+  <img src="docs/figures/zn_coordination_spheres.png" width="920"
+       alt="Cross-section through the zinc coordination sphere for native ligands, Arm A and Arm B: native atoms cluster in the 1.90-2.35 A annulus, Arm A scatters across and inside it, Arm B is pushed out beyond the first shell">
 </p>
 
 **Step 3 kill check, run early — the pre-registered threat is live.** A post-hoc SMARTS filter
@@ -189,14 +197,13 @@ metal-aware-sbdd/
 │   ├── train_arm_b.py / train_arm_c.py, lora.py
 │   ├── build_arm_c_surgery.py, verify_arm_c_surgery.py, verify_arm_c_gradient_flow.py
 │   ├── run_smarts_baseline.py       # pre-registered post-hoc ZBG filter kill check
-│   ├── run_arm_b_analysis.py, evaluate_step2_glmm.py, run_step1_analysis.py
-│   └── make_readme_figures.py       # regenerates every figure in this file
+│   └── run_arm_b_analysis.py, evaluate_step2_glmm.py, run_step1_analysis.py
 ├── results/
 │   ├── step0/GATE_CHECKS.md         # scale and leakage gates
 │   ├── step1/                       # Arm A: analysis plan, results, C1 control, run manifest
 │   └── step2/                       # Arm B and Arm C: plans, training logs, evaluations
 ├── docs/
-│   ├── figures/                     # figures used above
+│   ├── figures/                     # figures used above, and the script that regenerates them
 │   └── step3_smarts_baseline.md     # kill-check record
 ├── tests/test_coordination_checker.py
 └── MODIFICATIONS.md                 # every deviation from vendored upstream DiffSBDD
@@ -232,7 +239,7 @@ python scripts/coordination_checker.py \
 Regenerate the figures in this README from the checker output:
 
 ```bash
-python scripts/make_readme_figures.py
+python docs/figures/make_readme_figures.py
 ```
 
 ---
