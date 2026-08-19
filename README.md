@@ -100,6 +100,8 @@ All rates below are recomputed directly from the checker output on the primary X
        alt="Valid coordination rate: native ligands 77.17%, Arm A with post-hoc SMARTS filter 24.45%, Arm A 19.98%, Arm B 10.58%">
 </p>
 
+*Bars show cluster-mean rates across the 21 sequence clusters (each cluster weighted equally); whiskers indicate 95% percentile CIs from 10,000 cluster bootstrap resamples. Diamonds (◆) mark pooled molecule-level rates (lower than cluster means because the two largest target families, 50 and 32 targets, score below average). Arm A + SMARTS filter is a post-hoc filtered subset (retains 38% of molecules; yield per generated molecule is 9.3%).*
+
 | Endpoint | Native ligands (C1) | Arm A (base) | Arm B (fine-tuned, metal-blind) |
 |---|---:|---:|---:|
 | Valid coordination rate | **77.17%** | 19.98% | 10.58% |
@@ -134,6 +136,8 @@ coordinate the metal, it learns to **avoid the region**.
        alt="Distance from zinc to the nearest ligand heavy atom: natives peak inside the valid 1.90-2.35 A window, Arm A is diffuse, Arm B is shifted outward with a large fraction beyond 5 A">
 </p>
 
+*Solid curves show Gaussian kernel density estimates ($\sigma = 0.10\text{ \AA}$, identical bandwidth across all series) scaled to percentage of molecules per 0.2 Å bin; faint steps show raw binned counts. Smoothing leaks minor density across the 1.70 Å boundary not present in the raw bins.*
+
 The same distances, read radially instead of along an axis — a cross-section through the
 coordination sphere, one dot per molecule:
 
@@ -141,6 +145,8 @@ coordination sphere, one dot per molecule:
   <img src="docs/figures/zn_coordination_spheres.png" width="920"
        alt="Cross-section through the zinc coordination sphere for native ligands, Arm A and Arm B: native atoms cluster in the 1.90-2.35 A annulus, Arm A scatters across and inside it, Arm B is pushed out beyond the first shell">
 </p>
+
+*Zn²⁺ ionic radius (0.74 Å) is the Shannon four-coordinate value. Top panels show 2D radial cross-sections (one dot per molecule, 600 sampled per arm); bottom panels show the aligned bilateral radial density profile spanning the diameter of the sphere (percentages are geometric distance-only; the full valid-coordination endpoint additionally requires the contacting atom to be a chemically valid N, O, or S donor).*
 
 **Step 3 kill check, run early — the pre-registered threat is live.** A post-hoc SMARTS filter
 for known zinc-binding groups applied to the *unmodified* base model recovers 24.45% valid
@@ -203,7 +209,7 @@ metal-aware-sbdd/
 │   ├── step1/                       # Arm A: analysis plan, results, C1 control, run manifest
 │   └── step2/                       # Arm B and Arm C: plans, training logs, evaluations
 ├── docs/
-│   ├── figures/                     # figures used above, and the script that regenerates them
+│   ├── figures/                     # figures used above, master generator, and per-figure scripts
 │   └── step3_smarts_baseline.md     # kill-check record
 ├── tests/test_coordination_checker.py
 └── MODIFICATIONS.md                 # every deviation from vendored upstream DiffSBDD
@@ -236,7 +242,7 @@ python scripts/coordination_checker.py \
   --out results/step1/checker/generated.jsonl
 ```
 
-Regenerate the figures in this README from the checker output:
+Regenerate all figures in this README (or run individual `fig*.py` scripts):
 
 ```bash
 python docs/figures/make_readme_figures.py
