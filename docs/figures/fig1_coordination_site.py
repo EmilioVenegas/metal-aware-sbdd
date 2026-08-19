@@ -45,8 +45,17 @@ def render_pymol_scene(pdb_id: str, donors: dict, temp_png: Path) -> None:
     cmd.select("zn_site", "chain A and resn ZN")
     cmd.select("coord_res", f"chain A and resi {res_nums} and (sidechain or name CA)")
     cmd.select("lig_near", "lig within 6.5 of zn_site")
+    cmd.select("bb_cartoon", f"byres (chain A and resi {res_nums} expand 3)")
 
-    # Ball and stick representation
+    # Secondary structure backbone cartoon + Ball and stick sidechains
+    cmd.show("cartoon", "bb_cartoon")
+    cmd.set("cartoon_color", "gray85")
+    cmd.set("cartoon_transparency", 0.25)
+    cmd.set("cartoon_fancy_helices", 1)
+    cmd.set("cartoon_flat_sheets", 1)
+    cmd.set("cartoon_smooth_loops", 1)
+    cmd.set("cartoon_side_chain_helper", 1)
+
     cmd.show("sticks", "coord_res or lig_near")
     cmd.show("spheres", "zn_site")
     cmd.set("sphere_scale", 0.54, "zn_site")
@@ -135,7 +144,7 @@ def make_figure(outdir: Path, targets: dict, pdb_id: str = "9ZSN") -> Path:
 
         # Visual Callout Badges for Coordination Shell
         # His48 (Bottom Left)
-        ax.text(380, 1120, "His48 (Nε2)\n2.10 Å", fontsize=8.8, weight="bold",
+        ax.text(220, 1080, "His48 (Nε2)\n2.10 Å", fontsize=8.8, weight="bold",
                 ha="center", va="center", color="#4a1f5c",
                 bbox=dict(boxstyle="round,pad=0.30", facecolor="#f5f3ff", edgecolor="#c4b5fd", alpha=0.95, lw=0.8))
 
