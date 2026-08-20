@@ -23,7 +23,8 @@ results/**/*.jsonl
 
 .env
 .venv/
-
+external/
+results/step3/
 # internal working documents — strategy, roadmaps, reading notes, manuscript drafts.
 # The repository publishes analysis: pre-registered plans, results, checker code, figures.
 /*.md
