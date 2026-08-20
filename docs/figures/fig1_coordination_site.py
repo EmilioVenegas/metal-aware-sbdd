@@ -167,10 +167,10 @@ def make_figure(outdir: Path, targets: dict, pdb_id: str = "9ZSN") -> Path:
                 path_effects=[pe.withStroke(linewidth=2.5, foreground="#4c1d95")])
 
         # Header and subtitle
-        fig.text(0.5, 0.965, f"Catalytic zinc site — PDB {pdb_id} ({tgt['resolution']:.2f} Å), ligand {tgt['ligand_resname']}",
+        fig.text(0.5, 0.965, f"Catalytic zinc site: PDB {pdb_id} ({tgt['resolution']:.2f} Å), ligand {tgt['ligand_resname']}",
                  ha="center", va="top", fontsize=11.5, weight="bold", color="#111827")
-        fig.text(0.5, 0.915, f"{len(donors['protein_donors'])} protein sidechain donors and the ligand donor share one coordination sphere —\n"
-                             "the metal is deleted from the pocket every one of these models is conditioned on",
+        fig.text(0.5, 0.915, f"{len(donors['protein_donors'])} protein sidechain donors and the ligand donor share one coordination sphere.\n"
+                             "The metal is deleted from the pocket during model preprocessing.",
                  ha="center", va="top", fontsize=9.0, color="#374151")
 
         # Academic legend

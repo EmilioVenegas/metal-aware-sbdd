@@ -29,7 +29,9 @@ ELEMENT_COLOR = {
 ARM_COLORS = {
     "native": "#1a9850",
     "smarts": "#7570b3",
-    "arm_a": "#d6604d",
+    "arm_c": "#e66101",
+    "arm_d": "#762a83",
+    "arm_a": "#525252",
     "arm_b": "#2166ac",
 }
 

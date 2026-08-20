@@ -21,12 +21,15 @@ from common import (
 )
 
 
-def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list[dict],
+def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], arm_c: list[dict],
+                arm_d: list[dict], native: list[dict],
                 xray: set[str], kde_sigma: float = 0.10) -> Path:
     series = [
         ("Native ligands", native, ARM_COLORS["native"]),
-        ("Arm A — base DiffSBDD", arm_a, ARM_COLORS["arm_a"]),
-        ("Arm B — fine-tuned, metal-blind", arm_b, ARM_COLORS["arm_b"]),
+        ("Arm C: metal-aware (LoRA)", arm_c, ARM_COLORS["arm_c"]),
+        ("Arm D: inference seed", arm_d, ARM_COLORS["arm_d"]),
+        ("Arm A: status quo (base)", arm_a, ARM_COLORS["arm_a"]),
+        ("Arm B: fine-tuned, metal-blind", arm_b, ARM_COLORS["arm_b"]),
     ]
     bins = np.arange(0.8, 8.01, 0.2)
     width = bins[1] - bins[0]
@@ -67,9 +70,9 @@ def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list
         ax.set_ylabel("molecules (%)", fontsize=9.5)
         fig.text(0.5, 0.97, "Where generated ligand atoms land relative to the deleted metal",
                  ha="center", va="top", fontsize=11.5, weight="bold")
-        fig.text(0.5, 0.91, "primary X-ray cohort: 12,700 molecules per generative arm",
+        fig.text(0.5, 0.91, "primary X-ray cohort: 12,700 molecules per arm (3,600 for Arm D)",
                  ha="center", va="top", fontsize=8.6, color="#555555")
-        ax.legend(frameon=False, loc="upper right", borderaxespad=0.6)
+        ax.legend(frameon=False, loc="upper right", borderaxespad=0.6, fontsize=8.2)
         fig.subplots_adjust(left=0.085, right=0.975, top=0.86, bottom=0.14)
         out = outdir / "zn_distance_distribution.png"
         fig.savefig(out)
@@ -86,13 +89,13 @@ def main():
     outdir = REPO / args.outdir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    _, xray, _ = load_cohort()
+    targets, xray, _ = load_cohort()
     arm_a = load_jsonl(REPO / "results/step1/checker/generated.jsonl")
     arm_b = load_jsonl(REPO / "results/step2/arm_b_generation/checker_results.jsonl")
+    arm_c = load_jsonl(REPO / "results/step2/arm_c_generation/checker_results.jsonl")
+    arm_d = load_jsonl(REPO / "results/step2/arm_d_generation/checker_results.jsonl")
     native = load_jsonl(REPO / "results/step1/checker/native_c1.jsonl")
 
-    make_figure(outdir, arm_a, arm_b, native, xray, kde_sigma=args.kde_sigma)
-
-
+    make_figure(outdir, arm_a, arm_b, arm_c, arm_d, native, xray, kde_sigma=args.kde_sigma)
 if __name__ == "__main__":
     main()

@@ -22,13 +22,16 @@ from common import (
 )
 
 
-def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list[dict],
+def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], arm_c: list[dict],
+                arm_d: list[dict], native: list[dict],
                 xray: set[str], n_show: int = 600, rmax: float = 4.6, seed: int = 7) -> Path:
     """Cross-section through coordination sphere (top) and aligned bilateral density profile (bottom)."""
     panels = [
         ("Native ligands", native, ARM_COLORS["native"]),
-        ("Arm A — base DiffSBDD", arm_a, ARM_COLORS["arm_a"]),
-        ("Arm B — fine-tuned, metal-blind", arm_b, ARM_COLORS["arm_b"]),
+        ("Arm C: metal-aware", arm_c, ARM_COLORS["arm_c"]),
+        ("Arm D: inference seed", arm_d, ARM_COLORS["arm_d"]),
+        ("Arm A: status quo", arm_a, ARM_COLORS["arm_a"]),
+        ("Arm B: metal-blind", arm_b, ARM_COLORS["arm_b"]),
     ]
     rng = np.random.default_rng(seed)
 
@@ -45,9 +48,9 @@ def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list
         max_dens_sym = max(max_dens_sym, float(dens_sym.max()))
 
     with plt.rc_context(ACADEMIC_RC):
-        fig = plt.figure(figsize=(9.8, 6.0))
-        gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 0.44], hspace=0.28, wspace=0.16,
-                               left=0.06, right=0.98, top=0.81, bottom=0.09)
+        fig = plt.figure(figsize=(15.8, 5.8))
+        gs = fig.add_gridspec(2, 5, height_ratios=[1.0, 0.44], hspace=0.28, wspace=0.15,
+                               left=0.04, right=0.985, top=0.81, bottom=0.09)
         top_y = max_dens_sym * 1.15
 
         for i, (label, recs, color) in enumerate(panels):
@@ -82,7 +85,7 @@ def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list
             ax_top.set_aspect("equal")
             ax_top.set_axis_off()
             ax_top.set_title(f"{label}\n1.90–2.35 Å: {pct_valid:.1f}%   ·   < 1.70 Å: {pct_clash:.1f}%",
-                             fontsize=8.8, pad=6)
+                             fontsize=8.2, pad=5)
             ax_top.text(0, -rmax - 0.30, f"{pct_out:.0f}% beyond {rmax:.1f} Å",
                         ha="center", va="top", fontsize=7.5, color="#666666")
 
@@ -144,13 +147,13 @@ def main():
     outdir = REPO / args.outdir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    _, xray, _ = load_cohort()
+    targets, xray, _ = load_cohort()
     arm_a = load_jsonl(REPO / "results/step1/checker/generated.jsonl")
     arm_b = load_jsonl(REPO / "results/step2/arm_b_generation/checker_results.jsonl")
+    arm_c = load_jsonl(REPO / "results/step2/arm_c_generation/checker_results.jsonl")
+    arm_d = load_jsonl(REPO / "results/step2/arm_d_generation/checker_results.jsonl")
     native = load_jsonl(REPO / "results/step1/checker/native_c1.jsonl")
 
-    make_figure(outdir, arm_a, arm_b, native, xray, n_show=args.n_show, rmax=args.rmax, seed=args.seed)
-
-
+    make_figure(outdir, arm_a, arm_b, arm_c, arm_d, native, xray, n_show=args.n_show, rmax=args.rmax, seed=args.seed)
 if __name__ == "__main__":
     main()

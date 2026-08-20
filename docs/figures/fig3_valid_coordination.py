@@ -21,7 +21,8 @@ from common import (
 )
 
 
-def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list[dict],
+def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], arm_c: list[dict],
+                arm_d: list[dict], native: list[dict],
                 xray: set[str], pdb_to_cluster: dict[str, str]) -> Path:
     match = smarts_matches(REPO / "results/step1/generation/sdf", xray)
     kept = sum(1 for r in arm_a if not r.get("unreadable") and r["pdb_id"] in xray
@@ -32,20 +33,26 @@ def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list
                    if match.get((r["pdb_id"], r["mol_index"]), False)]
 
     F = "has_valid_coordination"
+    F_d = "seed_excluded_has_valid_coordination"
+    arm_d_valid = [r for r in arm_d if not r.get("unreadable") and r["pdb_id"] in xray]
+
     bars = [
         ("Native ligands\n(C1 ceiling)", rate(native, F, xray),
          per_target_rate(native, F, xray), ARM_COLORS["native"], False),
+        ("Arm C\nmetal-aware (LoRA)", rate(arm_c, F, xray),
+         per_target_rate(arm_c, F, xray), ARM_COLORS["arm_c"], False),
         (f"Arm A + SMARTS filter\n(post-hoc, keeps {retained:.0f}% of molecules)",
          rate(smarts_recs, F, xray),
          per_target_rate(arm_a, F, xray, subset=match), ARM_COLORS["smarts"], True),
-        ("Arm A\nbase DiffSBDD", rate(arm_a, F, xray),
+        ("Arm A\nstatus quo (base DiffSBDD)", rate(arm_a, F, xray),
          per_target_rate(arm_a, F, xray), ARM_COLORS["arm_a"], False),
+        ("Arm D (seed-excluded)\ninference seed inpainting", rate(arm_d_valid, F_d, xray),
+         per_target_rate(arm_d_valid, F_d, xray), ARM_COLORS["arm_d"], False),
         ("Arm B\nfine-tuned, metal-blind", rate(arm_b, F, xray),
          per_target_rate(arm_b, F, xray), ARM_COLORS["arm_b"], False),
     ]
-
     with plt.rc_context(ACADEMIC_RC):
-        fig, ax = plt.subplots(figsize=(8.2, 3.8))
+        fig, ax = plt.subplots(figsize=(8.6, 4.9))
         ypos = np.arange(len(bars))[::-1]
         for y, (_, pooled, pertgt, color, is_subset) in zip(ypos, bars):
             by_cluster: dict[str, list[float]] = {}
@@ -87,10 +94,9 @@ def make_figure(outdir: Path, arm_a: list[dict], arm_b: list[dict], native: list
 
         fig.text(0.5, 0.97, "Valid coordination against the deleted catalytic Zn²⁺",
                  ha="center", va="top", fontsize=11.5, weight="bold")
-        fig.text(0.5, 0.91, "primary X-ray cohort: 21 sequence clusters, 127 targets, "
-                             "100 valid molecules per target", ha="center", va="top",
+        fig.text(0.5, 0.91, "primary X-ray cohort: 21 sequence clusters, 100 valid molecules per target "
+                             "(36 paired targets for Arm D)", ha="center", va="top",
                  fontsize=8.6, color="#555555")
-
         fig.subplots_adjust(left=0.34, right=0.98, top=0.85, bottom=0.14)
         out = outdir / "valid_coordination_by_arm.png"
         fig.savefig(out)
@@ -106,14 +112,15 @@ def main():
     outdir = REPO / args.outdir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    _, xray, clusters = load_cohort()
+    targets, xray, clusters = load_cohort()
     arm_a = load_jsonl(REPO / "results/step1/checker/generated.jsonl")
     arm_b = load_jsonl(REPO / "results/step2/arm_b_generation/checker_results.jsonl")
+    arm_c = load_jsonl(REPO / "results/step2/arm_c_generation/checker_results.jsonl")
+    arm_d = load_jsonl(REPO / "results/step2/arm_d_generation/checker_results.jsonl")
     native = load_jsonl(REPO / "results/step1/checker/native_c1.jsonl")
     pdb_to_cluster = {p: f"C{i+1:02d}" for i, m in enumerate(clusters) for p in m}
 
-    make_figure(outdir, arm_a, arm_b, native, xray, pdb_to_cluster)
-
+    make_figure(outdir, arm_a, arm_b, arm_c, arm_d, native, xray, pdb_to_cluster)
 
 if __name__ == "__main__":
     main()
